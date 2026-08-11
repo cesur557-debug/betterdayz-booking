@@ -1,0 +1,12 @@
+{
+  "editor.fontSize": 14,
+  "editor.wordWrap": "on",
+  "editor.minimap.enabled": false,
+  "editor.formatOnSave": false,
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true
+  },
+  "workbench.startupEditor": "none",
+  "simpleBrowser.focusLockIndicator.enabled": false
+}
