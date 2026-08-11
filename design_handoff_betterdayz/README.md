@@ -2,7 +2,17 @@
 
 Entwickler-Handoff für die Buchungsplattform eines geschlossenen Personal-Training-Studios (fünf feste Trainer, kleine Fläche, Zugang nur per Code). Quelle ist der lauffähige React-Prototyp `src/App.jsx`.
 
-> **Stand v2 — helles Design nach der MotionSite-Referenz.** Verbindlich für Farben, Typografie und Effekte ist `tokens.css` in diesem Ordner. Kernpunkte: helle Fläche `#F0F5F7`, Petrol `#154359` als Tinte und CTA-Füllung, Cyan-Verlauf `#185B7B → #4BBDF0` für Werte und Balken, TT Firs Neue mit Inter-Fallback, Versal-Headlines mit enger Laufweite, Schrägschnitt-Kanten (Chamfer-Clip-Paths) auf CTAs und Stat-Karten. Die Struktur der Dokumente 01 bis 05 (Komponentenaufbau, Screens, Zustände, Regeln, Responsive, A11y) gilt unverändert, dort genannte dunkle Farbwerte und die Serif-Kursiv-Typografie sind durch die Token aus `tokens.css` ersetzt.
+> **Stand v3 — Mobile App nach der stoic.-Referenz** (Self-Care-Journaling-App, gefunden über Mobbin). Verbindlich für Farben und Typografie ist `tokens.css` in diesem Ordner.
+>
+> Die sechs Merkmale dieser Designsprache:
+> 1. **Monochrom hell.** Hintergrund `#EFF1F2`, Karten reinweiß, Text `#0F1113`. Einziger Farbton ist ein gedämpftes Blau `#A9C4DC` für Belegung und Balken — sonst nur Grauwerte.
+> 2. **Kleingeschriebene Headlines mit Punkt.** „deine termine.", „wann passt es dir.", „das studio." — fett, eng gesetzt (`letter-spacing: -0.03em`), immer lowercase.
+> 3. **Karten ohne Rand und ohne harten Schatten.** Radius 24px, Schatten nur `0 1px 2px`. Struktur entsteht aus Ton und Abstand.
+> 4. **Schwarze Pillen als Aktion.** Primärbutton, gewählter Slot und der zentrale Plus-Knopf sind vollflächig `#0F1113` mit weißer Schrift.
+> 5. **App-Shell mit Bottom-Navigation.** Maximal 430px breit, fixierte Tab-Leiste unten mit zentralem runden Plus-Knopf (Kunde: Start, Termine, [+], Trainer, Studio — Trainer: Heute, Woche, Sessions, Zeiten).
+> 6. **Wochenleiste mit Häkchen** oben auf Start- und Terminwahl-Screen, aktiver Tag als weiße Kachel, heutiger Tag mit Punkt.
+>
+> Die Struktur der Dokumente 01 bis 05 (Komponentenaufbau, Screens, Zustände, Regeln, Responsive, A11y) gilt inhaltlich weiter, alle dort genannten Farbwerte und Schriftangaben sind durch `tokens.css` ersetzt.
 
 ## Dateien
 

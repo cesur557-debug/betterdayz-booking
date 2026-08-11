@@ -1,65 +1,49 @@
-/* BetterDayz Booking — Design-Tokens v2 (hell)
-   Designsprache nach der MotionSite-Referenz. Quelle: src/App.jsx */
+/* BetterDayz Booking — Design-Tokens v3
+   Designsprache nach stoic. (Mobbin-Referenz, iOS): monochrom hell,
+   kleingeschriebene fette Headlines mit Punkt, weiße Karten ohne Rand,
+   schwarze Pillen als Aktion. Quelle: src/App.jsx */
 
 :root {
   /* Flächen */
-  --grund: #F0F5F7;
-  --flaeche: #FFFFFF;
-  --flaeche-hell: #E4EBEF;
+  --grund: #EFF1F2;          /* App-Hintergrund */
+  --flaeche: #FFFFFF;        /* Karten */
+  --flaeche-still: #E6E9EB;  /* getönte Karte, Chips, Balken-Track */
 
   /* Text */
-  --tinte: #154359;
-  --gedeckt: #5D7A8A;
-  --cta-text: #FFFFFF;
+  --tinte: #0F1113;          /* Primärtext, Aktivfüllung */
+  --gedeckt: #8A9096;        /* Sekundärtext */
+  --leise: #B4B9BD;          /* Labels, inaktive Zustände */
 
-  /* Akzent Petrol und Cyan */
-  --petrol: #185B7B;
-  --cyan: #4BBDF0;
-  --cta: #154359;
-  --cta-hover: #1B5B7A;
-  --cyan-ton: rgba(75, 189, 240, 0.14);
+  /* Aktion */
+  --akzent: #0F1113;         /* Primärbutton, gewählter Slot, FAB */
+  --akzent-text: #FFFFFF;
 
-  /* Status */
-  --frei: #2F8F5B;
-  --frei-dunkel: rgba(47, 143, 91, 0.09);
-  --warnung: #B36A24;
-  --warnung-dunkel: rgba(179, 106, 36, 0.1);
-  --voll: #C05252;
-
-  /* Verläufe */
-  --verlauf-wert: linear-gradient(294deg, #185B7B 20%, #4BBDF0);
-  --verlauf-balken: linear-gradient(90deg, #185B7B, #4BBDF0);
-  --verlauf-eigene: linear-gradient(180deg, rgba(24, 91, 123, 0.2), rgba(75, 189, 240, 0.16));
-  --glow-seite: radial-gradient(1100px 500px at 50% -10%, rgba(75, 189, 240, 0.14), transparent 70%);
+  /* Daten und Status */
+  --daten: #A9C4DC;          /* einziger Farbton, für Belegung und Balken */
+  --frei: #3C7A55;
+  --frei-flaeche: #E4EFE8;
+  --warnung: #9A6A34;
+  --warnung-flaeche: #F4EBDF;
+  --voll: #9E5757;
+  --voll-flaeche: #F3E4E4;
 
   /* Schrift */
-  --grotesk: 'TT Firs Neue', 'Inter', 'Helvetica Neue', system-ui, sans-serif;
+  --grotesk: 'Outfit', 'Inter', 'Helvetica Neue', system-ui, sans-serif;
   --mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
 
   /* Radien */
-  --radius-s: 10px;
-  --radius-m: 12px;
-  --radius-l: 16px;
-  --radius-xl: 20px;
+  --radius-s: 14px;
+  --radius-m: 18px;
+  --radius-l: 24px;   /* Karten und Slot-Kacheln */
   --radius-pill: 999px;
-  --radius-zelle: 8px;
 
-  /* Linien und Schatten */
-  --linie: rgba(21, 67, 89, 0.14);
-  --schatten-karte: 0 12px 32px rgba(21, 67, 89, 0.1);
-  --schatten-kachel: 0 8px 22px rgba(21, 67, 89, 0.08);
-  --schatten-kpi: 0 10px 26px rgba(21, 67, 89, 0.09);
-  --schatten-aktiv: 0 14px 30px rgba(21, 67, 89, 0.28);
-  --schatten-topbar: 0 8px 24px rgba(21, 67, 89, 0.08);
-
-  /* Raster-Töne (Wochenraster und Block-Grid) */
-  --zelle-grund: rgba(21, 67, 89, 0.05);
-  --zelle-ausserhalb: rgba(21, 67, 89, 0.015);
-  --zelle-fremd: #AFC6D1;
-  --zelle-heute: rgba(75, 189, 240, 0.1);
-  --schraffur-block: repeating-linear-gradient(45deg, transparent 0 5px, rgba(21, 67, 89, 0.1) 5px 10px);
-
-  /* Über-Sektion */
-  --stat-rand: rgba(255, 255, 255, 0.8);
-  --chamfer-knopf: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  /* Schatten — bewusst fast unsichtbar, Struktur kommt aus Ton und Abstand */
+  --schatten: 0 1px 2px rgba(15, 17, 19, 0.04);
 }
+
+/* Typografie-Regeln
+   h1 34px / h2 27px — font-weight 700, text-transform lowercase,
+   letter-spacing -0.03em, immer mit Punkt am Satzende ("deine termine.").
+   Kicker 11px, weight 600, letter-spacing 0.14em, uppercase, Farbe --leise.
+   Alle Zeiten, Preise und Zahlen in --mono.
+   App-Shell max-width 430px, Bottom-Navigation fixiert mit zentralem FAB. */
