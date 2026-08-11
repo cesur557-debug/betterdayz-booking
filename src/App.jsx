@@ -95,10 +95,10 @@ const TRAININGSARTEN = [
 /* Arbeitszeiten je Wochentag Mo bis Sa. null bedeutet freier Tag. */
 const TRAINER_START = [
   {
-    id: 'deniz',
-    name: 'Deniz Aydın',
-    monogramm: 'DA',
-    herkunft: 'Wettkampfboxen',
+    id: 'serdar',
+    name: 'Serdar',
+    monogramm: 'SE',
+    herkunft: 'Studioleitung · Wettkampfboxen',
     philosophie:
       'Boxen ist Handwerk. Ich bringe dir saubere Technik bei, bevor wir über Härte reden. Wer die Grundlagen beherrscht, wird von allein schneller und ruhiger.',
     schwerpunkte: ['Schlagtechnik', 'Pratzenarbeit', 'Wettkampfvorbereitung'],
@@ -110,9 +110,9 @@ const TRAINER_START = [
     blocks: [],
   },
   {
-    id: 'miriam',
-    name: 'Miriam Stein',
-    monogramm: 'MS',
+    id: 'chrissi',
+    name: 'Chrissi',
+    monogramm: 'CH',
     herkunft: 'Rehabilitation nach Verletzungen',
     philosophie:
       'Nach einer Verletzung entscheidet nicht der Ehrgeiz, sondern der Aufbau. Ich steigere Belastung so, dass dein Körper mitkommt. Schmerzfrei trainieren ist das Ziel, nicht die Ausnahme.',
@@ -125,9 +125,9 @@ const TRAINER_START = [
     blocks: ['4-8', '4-9'],
   },
   {
-    id: 'torben',
-    name: 'Torben Vogt',
-    monogramm: 'TV',
+    id: 'ertan',
+    name: 'Ertan',
+    monogramm: 'ER',
     herkunft: 'Kraftdreikampf',
     philosophie:
       'Kniebeuge, Bankdrücken, Kreuzheben. Drei Übungen erzählen alles, was man über deinen Körper wissen muss. Ich mache dich stark, der Rest kommt von allein.',
@@ -140,24 +140,24 @@ const TRAINER_START = [
     blocks: [],
   },
   {
-    id: 'sofia',
-    name: 'Sofia Marques',
-    monogramm: 'SM',
+    id: 'cem',
+    name: 'Cem',
+    monogramm: 'CE',
     herkunft: 'Ausdauer und Kondition',
     philosophie:
       'Kondition ist die Währung, mit der du jedes andere Training bezahlst. Ich arbeite mit klaren Intervallen und ehrlichen Pausen. Du lernst, dein Tempo zu kennen und zu halten.',
     schwerpunkte: ['Intervalltraining', 'Grundlagenausdauer', 'Atemtechnik'],
     arten: ['hit', 'boxing'],
     erfahrung: 9,
-    zertifikate: ['Sportwissenschaft M. Sc.', 'Lauftrainerin'],
+    zertifikate: ['Sportwissenschaft M. Sc.', 'Lauftrainer'],
     kontingent: 6,
     arbeitszeiten: [{ von: 7, bis: 15 }, { von: 7, bis: 15 }, { von: 7, bis: 15 }, { von: 7, bis: 15 }, { von: 7, bis: 15 }, { von: 7, bis: 12 }],
     blocks: [],
   },
   {
-    id: 'jonas',
-    name: 'Jonas Keller',
-    monogramm: 'JK',
+    id: 'benny',
+    name: 'Benny',
+    monogramm: 'BE',
     herkunft: 'Athletikbetreuung',
     philosophie:
       'Ich betreue dich so, wie ein guter Mechaniker eine gute Maschine pflegt. Wir testen, wir messen, wir verbessern gezielt. Sprungkraft, Schnelligkeit und Stabilität sind kein Zufall.',
@@ -174,14 +174,14 @@ const TRAINER_START = [
 /* Kunden mit Code können sich anmelden. Kunden ohne Code sind Bestandskunden,
    die nur in den Seed-Buchungen auftauchen. */
 const KUNDEN_START = [
-  { id: 'k1', code: 'GRANIT-24', name: 'Selin Kaya', paket: 10, verbleibend: 7, ziele: 'Kraftaufbau nach Schulter-OP, rechte Seite langsam steigern' },
-  { id: 'k2', code: 'ANKER-58', name: 'Robert Weiler', paket: 20, verbleibend: 9, ziele: 'Vorbereitung auf einen Amateur-Boxkampf im Oktober, Fokus Beinarbeit' },
-  { id: 'k3', code: 'KOMPASS-11', name: 'Mara Lindqvist', paket: 8, verbleibend: 6, ziele: 'Wieder in Form nach der Elternzeit, Rücken stabilisieren' },
-  { id: 'k4', code: null, name: 'Jan Hoffmann', paket: 10, verbleibend: 4, ziele: 'Sprungkraft für Volleyball verbessern, Knie stabil halten' },
-  { id: 'k5', code: null, name: 'Aylin Demir', paket: 20, verbleibend: 12, ziele: 'Erster Wettkampf im Kickboxen, Schlagkraft und Deckung' },
-  { id: 'k6', code: null, name: 'Katrin Sost', paket: 10, verbleibend: 6, ziele: 'Haltung verbessern, Nacken entlasten, Kraft im Oberkörper' },
-  { id: 'k7', code: null, name: 'Pavel Novak', paket: 10, verbleibend: 5, ziele: 'Kreuzheben sauber aufbauen, unterer Rücken braucht Aufmerksamkeit' },
-  { id: 'k8', code: null, name: 'Lena Wirth', paket: 20, verbleibend: 14, ziele: 'Nach der Kreuzband-Reha zurück zum alten Niveau' },
+  { id: 'k1', code: 'GRANIT-24', name: 'Emma Fischer', paket: 10, verbleibend: 7, ziele: 'Kraftaufbau nach Schulter-OP, rechte Seite langsam steigern' },
+  { id: 'k2', code: 'ANKER-58', name: 'David Krüger', paket: 20, verbleibend: 9, ziele: 'Vorbereitung auf einen Amateur-Boxkampf im Oktober, Fokus Beinarbeit' },
+  { id: 'k3', code: 'KOMPASS-11', name: 'Nina Hartmann', paket: 8, verbleibend: 6, ziele: 'Wieder in Form nach der Elternzeit, Rücken stabilisieren' },
+  { id: 'k4', code: null, name: 'Tim Berger', paket: 10, verbleibend: 4, ziele: 'Sprungkraft für Volleyball verbessern, Knie stabil halten' },
+  { id: 'k5', code: null, name: 'Leyla Acar', paket: 20, verbleibend: 12, ziele: 'Erster Wettkampf im Kickboxen, Schlagkraft und Deckung' },
+  { id: 'k6', code: null, name: 'Marco Steiner', paket: 10, verbleibend: 6, ziele: 'Haltung verbessern, Nacken entlasten, Kraft im Oberkörper' },
+  { id: 'k7', code: null, name: 'Julia Brandt', paket: 10, verbleibend: 5, ziele: 'Kreuzheben sauber aufbauen, unterer Rücken braucht Aufmerksamkeit' },
+  { id: 'k8', code: null, name: 'Kevin Roth', paket: 20, verbleibend: 14, ziele: 'Nach der Kreuzband-Reha zurück zum alten Niveau' },
 ]
 
 /* ============================================================================
@@ -423,14 +423,14 @@ function erzeugeSeedBuchungen(trainerListe, woche) {
   const demoTag = woche.heuteIndex < 0 ? 1 : Math.min(woche.heuteIndex + 1, 5)
 
   // Szenario volle Fläche um 13 Uhr, vier Kunden bei zwei Trainern
-  add('deniz', 'k4', 'boxing', demoTag, 13)
-  add('deniz', 'k5', 'hit', demoTag, 13)
-  add('torben', 'k6', 'pump-ok', demoTag, 13)
-  add('torben', 'k7', 'pump-uk', demoTag, 13)
+  add('serdar', 'k4', 'boxing', demoTag, 13)
+  add('serdar', 'k5', 'hit', demoTag, 13)
+  add('ertan', 'k6', 'pump-ok', demoTag, 13)
+  add('ertan', 'k7', 'pump-uk', demoTag, 13)
 
   // Szenario zwei Trainer auf der Fläche um 11 Uhr, Fläche nicht voll
-  add('torben', 'k8', 'pump-uk', demoTag, 11)
-  add('sofia', 'k4', 'hit', demoTag, 11)
+  add('ertan', 'k8', 'pump-uk', demoTag, 11)
+  add('cem', 'k4', 'hit', demoTag, 11)
 
   // Restliche Belegung zufällig, aber regelkonform über die Engine geprüft
   const seedKunden = ['k4', 'k5', 'k6', 'k7', 'k8']
@@ -447,11 +447,11 @@ function erzeugeSeedBuchungen(trainerListe, woche) {
       if (p.status === 'frei' && !p.duo) add(trainerId, kundeId, artId, tag, stunde)
     }
   }
-  fuelle('deniz', 7)
-  fuelle('miriam', 6)
-  fuelle('torben', 8)
-  fuelle('jonas', 5)
-  fuelle('sofia', 6) // Sofia erreicht damit ihr Kontingent und verschwindet aus der Auswahl
+  fuelle('serdar', 7)
+  fuelle('chrissi', 6)
+  fuelle('ertan', 8)
+  fuelle('benny', 5)
+  fuelle('cem', 6) // Cem erreicht damit sein Kontingent und gilt als ausgebucht
 
   // Buchungen in der Zukunft, unter anderem für die Anmeldung mit GRANIT-24
   const fuegeZukunft = (trainerId, kundeId, artId) => {
@@ -466,9 +466,9 @@ function erzeugeSeedBuchungen(trainerListe, woche) {
       }
     }
   }
-  fuegeZukunft('miriam', 'k1', 'pump-ok')
-  fuegeZukunft('deniz', 'k6', 'boxing')
-  fuegeZukunft('deniz', 'k7', 'hit')
+  fuegeZukunft('chrissi', 'k1', 'pump-ok')
+  fuegeZukunft('serdar', 'k6', 'boxing')
+  fuegeZukunft('serdar', 'k7', 'hit')
 
   return buchungen
 }
@@ -875,6 +875,17 @@ select { font-family: var(--grotesk); }
 .blog-kachel figcaption { padding: 10px 14px 12px; }
 .blog-kachel figcaption strong { display: block; font-size: 13px; font-weight: 600; }
 .blog-kachel figcaption span { font-size: 12px; color: var(--gedeckt); line-height: 1.4; }
+
+/* Studio-Infobereich */
+.studio-hero { margin: 0 0 18px; border-radius: var(--radius-l); overflow: hidden; box-shadow: var(--schatten); }
+.studio-hero img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; background: var(--flaeche-still); }
+.stats-reihe { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0 24px; }
+.stats-reihe .stat { background: var(--flaeche); border-radius: var(--radius-m); padding: 14px 8px 12px; text-align: center; box-shadow: var(--schatten); }
+.stats-reihe .zahl { font-size: 23px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
+.stats-reihe .label { font-size: 11px; color: var(--gedeckt); }
+.zitat-bubble { background: var(--grund); border-radius: 16px; padding: 14px 16px; font-size: 14px; line-height: 1.5; margin-top: 14px; }
+.galerie-strip { display: flex; gap: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -20px; padding: 2px 20px 8px; }
+.galerie-strip .blog-kachel { flex: 0 0 80%; }
 
 /* Buchungsbestätigung mit animiertem Haken */
 .erfolg-hintergrund {
@@ -2220,35 +2231,69 @@ function KundenAnsicht(props) {
 
       {tab === 'studio' && (
         <div className="schritt-einblendung">
-          <span className="kicker">Über uns</span>
-          <h2>das studio.</h2>
-          <p className="gedeckt" style={{ marginBottom: 20 }}>
-            BetterDayz ist ein geschlossenes Personal-Training-Studio. Wenige Menschen gleichzeitig, volle Aufmerksamkeit und Termine, die wirklich dir gehören.
-          </p>
-          {[
-            { wert: '5 trainer.', text: 'aus Wettkampfboxen, Reha, Kraftdreikampf, Ausdauer und Athletik betreuen dich persönlich' },
-            { wert: '4 plätze.', text: 'mehr Kunden trainieren nie gleichzeitig auf der Fläche, dafür steht das Studio' },
-            { wert: '62+ jahre.', text: 'gebündelte Trainingserfahrung stehen hinter jedem Termin bei uns' },
-          ].map((f) => (
-            <div className="stat-karte" key={f.wert}>
-              <div className="stat-wert">{f.wert}</div>
-              <p className="stat-text">{f.text}</p>
-            </div>
-          ))}
-
-          <span className="kicker" style={{ marginTop: 26 }}>
-            Einblicke
-          </span>
-          <h2 style={{ fontSize: 24 }}>unser raum.</h2>
-          <div className="blog-galerie">
-            {STUDIO_BILDER.map((b, i) => (
-              <BlogBild key={b.datei} {...b} gross={i === 0 || i === STUDIO_BILDER.length - 1} />
-            ))}
+          <div className="studio-hero">
+            <img src="/studio/kraftbereich.png" alt="Der Kraftbereich des Studios" />
           </div>
 
-          <button className="knopf-primaer" style={{ width: '100%', marginTop: 20 }} onClick={starteFlow}>
-            Session buchen
-          </button>
+          <span className="kicker">Über uns</span>
+          <h2>das studio.</h2>
+          <p className="gedeckt">
+            BetterDayz ist ein geschlossenes Personal-Training-Studio. Kein Laufkundengeschäft, keine vollen Geräteparks — wer hier trainiert, hat einen Code und einen festen Platz.
+          </p>
+          <p className="gedeckt">
+            Die Fläche ist bewusst klein gehalten. Höchstens vier Kunden trainieren gleichzeitig, jeder mit seinem Trainer. Das prägt alles, vom Termin bis zur Atmosphäre.
+          </p>
+
+          <div className="stats-reihe">
+            <div className="stat">
+              <div className="zahl">5</div>
+              <div className="label">Trainer</div>
+            </div>
+            <div className="stat">
+              <div className="zahl">4</div>
+              <div className="label">Plätze</div>
+            </div>
+            <div className="stat">
+              <div className="zahl">62+</div>
+              <div className="label">Jahre Erfahrung</div>
+            </div>
+          </div>
+
+          <span className="kicker">Studioleitung</span>
+          <h2 style={{ fontSize: 24 }}>ein wort von serdar.</h2>
+          <div className="karte" style={{ marginBottom: 22 }}>
+            <button
+              className="flaeche-trainerzeile"
+              onClick={() => setModalTrainerId('serdar')}
+              aria-haspopup="dialog"
+              style={{ background: 'transparent', width: '100%', padding: 0, minHeight: 0, borderRadius: 0 }}
+            >
+              <span className="monogramm" aria-hidden="true">
+                SE
+              </span>
+              <span className="txt" style={{ textAlign: 'left' }}>
+                <strong>Serdar</strong>
+                <span>Studioleitung · Wettkampfboxen</span>
+              </span>
+              <span className="pfeil" style={{ color: 'var(--leise)' }}>
+                ›
+              </span>
+            </button>
+            <div className="zitat-bubble">
+              „Ich habe BetterDayz gegründet, weil gutes Training Aufmerksamkeit braucht. Vier Plätze, fünf Trainer, keine Anonymität. Wer hierher kommt, wird gesehen — an guten wie an zähen Tagen."
+            </div>
+          </div>
+
+          <span className="kicker">Einblicke</span>
+          <h2 style={{ fontSize: 24 }}>unser raum.</h2>
+          <p className="gedeckt" style={{ marginBottom: 12 }}>
+            Kunstrasen, Tageslicht und Geräte, die wir wirklich benutzen.
+          </p>
+          <div className="galerie-strip">
+            {STUDIO_BILDER.map((b) => (
+              <BlogBild key={b.datei} {...b} />
+            ))}
+          </div>
         </div>
       )}
 
