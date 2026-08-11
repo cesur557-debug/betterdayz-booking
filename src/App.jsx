@@ -618,28 +618,55 @@ input[type="text"], select {
   min-height: 48px;
 }
 input::placeholder { color: var(--gedeckt); }
-.app { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+.app {
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column;
+  width: 100%; max-width: 430px; margin: 0 auto;
+  background: var(--grund);
+  position: relative;
+}
+@media (min-width: 480px) {
+  body { background: #E3EBEF; }
+  .app { box-shadow: 0 0 60px rgba(21, 67, 89, 0.14); }
+}
+.tabbar {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px; z-index: 60;
+  display: flex; gap: 4px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 -8px 24px rgba(21, 67, 89, 0.1);
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+}
+.tabbar button {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: transparent; border-radius: var(--radius-m); padding: 6px 4px; min-height: 52px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gedeckt);
+}
+.tabbar button:hover { background: var(--flaeche-hell); }
+.tabbar button[aria-selected="true"] { color: var(--petrol); background: var(--cyan-ton); }
+.tabbar svg { width: 22px; height: 22px; }
 .topbar {
   position: sticky; top: 0; z-index: 40;
-  display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  padding: 14px 24px;
-  padding-top: calc(14px + env(safe-area-inset-top));
-  background: rgba(240, 245, 247, 0.88);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 16px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  background: rgba(240, 245, 247, 0.9);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow: var(--schatten-topbar);
-  flex-wrap: wrap;
 }
-.marke { display: flex; align-items: baseline; gap: 14px; }
-.marke-name { font-weight: 700; font-size: 19px; letter-spacing: 0.14em; text-transform: uppercase; }
-.marke-zusatz { font-size: 11px; color: var(--gedeckt); letter-spacing: 0.18em; text-transform: uppercase; }
-.ansicht-schalter { display: flex; gap: 4px; background: var(--flaeche); border-radius: var(--radius-pill); padding: 4px; box-shadow: var(--schatten-topbar); }
+.marke { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.marke-name { font-weight: 700; font-size: 16px; letter-spacing: 0.12em; text-transform: uppercase; white-space: nowrap; }
+.marke-zusatz { display: none; }
+.ansicht-schalter { display: flex; gap: 3px; background: var(--flaeche); border-radius: var(--radius-pill); padding: 3px; box-shadow: var(--schatten-topbar); flex: none; }
 .ansicht-schalter button {
-  background: transparent; min-height: 38px; padding: 6px 18px; border-radius: var(--radius-pill);
-  color: var(--gedeckt); font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase;
+  background: transparent; min-height: 34px; padding: 5px 12px; border-radius: var(--radius-pill);
+  color: var(--gedeckt); font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
 }
-.ansicht-schalter button[aria-pressed="true"] { background: var(--cta); color: var(--cta-text); font-weight: 600; }
-.inhalt { flex: 1; width: 100%; max-width: 1240px; margin: 0 auto; padding: 24px; }
+.ansicht-schalter button[aria-pressed="true"] { background: var(--cta); color: var(--cta-text); }
+.inhalt { flex: 1; width: 100%; padding: 16px; padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
 .karte {
   background: var(--flaeche);
   border-radius: var(--radius-l);
@@ -674,7 +701,7 @@ input::placeholder { color: var(--gedeckt); }
   position: relative;
   border-radius: var(--radius-xl);
   overflow: hidden;
-  padding: clamp(56px, 10vw, 110px) 24px clamp(72px, 11vw, 130px);
+  padding: 48px 20px 68px;
   text-align: center;
   background:
     radial-gradient(520px 300px at 24% 0%, rgba(75, 189, 240, 0.22), transparent 70%),
@@ -688,11 +715,11 @@ input::placeholder { color: var(--gedeckt); }
   background: repeating-linear-gradient(90deg, transparent 0 140px, rgba(21, 67, 89, 0.02) 140px 141px);
   pointer-events: none;
 }
-.hero .kicker { color: var(--petrol); margin-bottom: 16px; }
-.hero h1 { font-size: clamp(40px, 7vw, 64px); margin-bottom: 14px; }
-.hero .unterzeile { color: var(--gedeckt); max-width: 460px; margin: 0 auto; font-size: 16px; }
-.hero-karte { max-width: 440px; margin: -48px auto 0; position: relative; z-index: 2; }
-.ueber { position: relative; padding: 96px 0 64px; }
+.hero .kicker { color: var(--petrol); margin-bottom: 14px; }
+.hero h1 { font-size: clamp(32px, 9vw, 40px); margin-bottom: 12px; }
+.hero .unterzeile { color: var(--gedeckt); max-width: 300px; margin: 0 auto; font-size: 15px; }
+.hero-karte { margin: -36px 4px 0; position: relative; z-index: 2; }
+.ueber { position: relative; padding: 8px 0 48px; }
 .ueber-kopfzeile { display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 40px; }
 .ueber-heading {
   font-weight: 600;
@@ -807,7 +834,7 @@ input::placeholder { color: var(--gedeckt); }
 .trainer-chip .profil-link { color: var(--petrol); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
 .slot-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
 }
 .slot-kachel {
@@ -875,7 +902,7 @@ input::placeholder { color: var(--gedeckt); }
   padding: 36px; text-align: center; color: var(--gedeckt);
   background: rgba(21, 67, 89, 0.04);
 }
-.kpi-reihe { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.kpi-reihe { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
 .kpi { background: var(--flaeche); border-radius: var(--radius-l); padding: 16px 20px; box-shadow: var(--schatten-kpi); }
 .kpi .wert { font-family: var(--mono); font-size: 27px; margin: 4px 0; color: var(--petrol); }
 .kpi .titel { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gedeckt); }
@@ -1014,7 +1041,7 @@ const STUDIO_FAKTEN = [
   },
 ]
 
-function UeberStudio() {
+function UeberStudio({ aktionLabel = 'Mit deinem Code starten', onAktion = null }) {
   const zumCode = () => {
     const feld = document.getElementById('zugangscode')
     if (feld) {
@@ -1035,8 +1062,8 @@ function UeberStudio() {
           <p style={{ marginTop: 16 }}>
             Wenige Menschen gleichzeitig, volle Aufmerksamkeit und Termine, die wirklich dir gehören. Dafür ist hier jeder Ablauf gebaut.
           </p>
-          <button className="ueber-link" onClick={zumCode}>
-            <span>Mit deinem Code starten</span>
+          <button className="ueber-link" onClick={onAktion || zumCode}>
+            <span>{aktionLabel}</span>
             <span className="ueber-link-knopf" aria-hidden="true">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M7 17 17 7" />
@@ -1156,6 +1183,63 @@ function TrainerModal({ trainer, buchungen, onClose }) {
   )
 }
 
+/* Kleine Strich-Icons für die App-Navigation unten */
+function TabIcon({ name }) {
+  const p = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', viewBox: '0 0 24 24', 'aria-hidden': true }
+  if (name === 'buchen')
+    return (
+      <svg {...p}>
+        <rect x="3" y="4" width="18" height="17" rx="3" />
+        <path d="M8 2v4M16 2v4M3 9h18M12 13v6M9 16h6" />
+      </svg>
+    )
+  if (name === 'termine')
+    return (
+      <svg {...p}>
+        <path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
+      </svg>
+    )
+  if (name === 'studio')
+    return (
+      <svg {...p}>
+        <path d="M4 9v6M7 6v12M17 6v12M20 9v6M7 12h10" />
+      </svg>
+    )
+  if (name === 'heute')
+    return (
+      <svg {...p}>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+      </svg>
+    )
+  if (name === 'woche')
+    return (
+      <svg {...p}>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
+      </svg>
+    )
+  if (name === 'sessions')
+    return (
+      <svg {...p}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 3" />
+      </svg>
+    )
+  if (name === 'zeiten')
+    return (
+      <svg {...p}>
+        <path d="M4 6h16M4 12h16M4 18h16" />
+        <circle cx="9" cy="6" r="2" />
+        <circle cx="15" cy="12" r="2" />
+        <circle cx="7" cy="18" r="2" />
+      </svg>
+    )
+  return null
+}
+
 /* ————— Kundenansicht ————— */
 
 function KundenAnsicht(props) {
@@ -1263,15 +1347,7 @@ function KundenAnsicht(props) {
           <div>
             <span>Willkommen zurück, {kunde.name.split(' ')[0]}</span>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span className="chip chip-akzent">{kunde.verbleibend} von {kunde.paket} Sessions übrig</span>
-            <button className="knopf-leise" onClick={() => setSchritt('fertig')}>
-              Meine Termine
-            </button>
-            <button className="knopf-leise" onClick={() => setSchritt('training')}>
-              Neue Buchung
-            </button>
-          </div>
+          <span className="chip chip-akzent">{kunde.verbleibend} von {kunde.paket} Sessions übrig</span>
         </div>
       )}
 
@@ -1336,7 +1412,6 @@ function KundenAnsicht(props) {
               Für diesen Prototyp funktionieren die Codes GRANIT-24, ANKER-58 und KOMPASS-11.
             </p>
           </div>
-          <UeberStudio />
         </div>
       )}
 
@@ -1377,6 +1452,9 @@ function KundenAnsicht(props) {
         <div className="schritt-einblendung">
           <div className="termin-kopf">
             <div>
+              <button className="knopf-leise" style={{ padding: 0, minHeight: 0, marginBottom: 6 }} onClick={() => setSchritt('trainer')}>
+                ‹ Trainer wechseln
+              </button>
               <span className="kicker">Terminwahl</span>
               <h2>
                 Wann willst du <em>trainieren</em>
@@ -1628,6 +1706,29 @@ function KundenAnsicht(props) {
         </div>
       )}
 
+      {schritt === 'studio' && kunde && (
+        <div className="schritt-einblendung">
+          <UeberStudio aktionLabel="Zur Buchung" onAktion={() => setSchritt('training')} />
+        </div>
+      )}
+
+      {kunde && (
+        <nav className="tabbar" role="tablist" aria-label="App-Navigation">
+          <button role="tab" aria-selected={['training', 'trainer', 'termin', 'checkout'].includes(schritt)} onClick={() => setSchritt('training')}>
+            <TabIcon name="buchen" />
+            Buchen
+          </button>
+          <button role="tab" aria-selected={schritt === 'fertig'} onClick={() => setSchritt('fertig')}>
+            <TabIcon name="termine" />
+            Termine
+          </button>
+          <button role="tab" aria-selected={schritt === 'studio'} onClick={() => setSchritt('studio')}>
+            <TabIcon name="studio" />
+            Studio
+          </button>
+        </nav>
+      )}
+
       <TrainerModal trainer={trainerListe.find((t) => t.id === modalTrainerId) || null} buchungen={buchungen} onClose={() => setModalTrainerId(null)} />
     </div>
   )
@@ -1780,13 +1881,6 @@ function TrainerAnsicht(props) {
   const umsatz = eigene.reduce((summe, b) => summe + b.preis, 0)
   const kundenWoche = new Set(eigene.map((b) => b.kundeId)).size
 
-  const tabs = [
-    { id: 'heute', label: 'Heute' },
-    { id: 'woche', label: 'Wochenraster' },
-    { id: 'sessions', label: 'Sessions', badge: kommende.length },
-    { id: 'verfuegbarkeit', label: 'Verfügbarkeit' },
-  ]
-
   return (
     <div className="schritt-einblendung">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 18 }}>
@@ -1826,14 +1920,6 @@ function TrainerAnsicht(props) {
           <div className="titel">Geplanter Umsatz</div>
           <div className="wert">{umsatz} €</div>
         </div>
-      </div>
-
-      <div className="dash-tabs" role="tablist" aria-label="Dashboard-Bereiche">
-        {tabs.map((t) => (
-          <button key={t.id} role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>
-            {t.label}
-          </button>
-        ))}
       </div>
 
       {tab === 'heute' && (
@@ -1910,6 +1996,25 @@ function TrainerAnsicht(props) {
           <Verfuegbarkeit woche={woche} trainer={trainer} buchungen={buchungen} aktionen={aktionen} />
         </div>
       )}
+
+      <nav className="tabbar" role="tablist" aria-label="Dashboard-Navigation">
+        <button role="tab" aria-selected={tab === 'heute'} onClick={() => setTab('heute')}>
+          <TabIcon name="heute" />
+          Heute
+        </button>
+        <button role="tab" aria-selected={tab === 'woche'} onClick={() => setTab('woche')}>
+          <TabIcon name="woche" />
+          Woche
+        </button>
+        <button role="tab" aria-selected={tab === 'sessions'} onClick={() => setTab('sessions')}>
+          <TabIcon name="sessions" />
+          Sessions
+        </button>
+        <button role="tab" aria-selected={tab === 'verfuegbarkeit'} onClick={() => setTab('verfuegbarkeit')}>
+          <TabIcon name="zeiten" />
+          Zeiten
+        </button>
+      </nav>
     </div>
   )
 }
@@ -2189,10 +2294,10 @@ export default function App() {
         </div>
         <div className="ansicht-schalter" role="group" aria-label="Ansicht wechseln">
           <button aria-pressed={ansicht === 'kunde'} onClick={() => setAnsicht('kunde')}>
-            Kundenansicht
+            Kunde
           </button>
           <button aria-pressed={ansicht === 'trainer'} onClick={() => setAnsicht('trainer')}>
-            Trainerdashboard
+            Trainer
           </button>
         </div>
       </header>
