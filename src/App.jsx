@@ -46,6 +46,12 @@ const KONTINGENT_IST_OBERGRENZE = true
 const PERSOENLICHE_ZUGANGSCODES = true
 const GEMEINSAMER_STUDIOCODE = 'BETTERDAYZ-STUDIO'
 
+/* Exklusivbuchung. Der Kunde kauft die restlichen Plätze der Fläche mit und
+   trainiert allein mit seinem Trainer. Der Aufpreis entspricht den drei
+   Plätzen, die dem Studio dadurch entgehen. */
+const EXKLUSIV_MOEGLICH = true
+const EXKLUSIV_AUFPREIS = 120
+
 const STORNO_FRIST_STUNDEN = 24
 const TAG_START = 7 // erste buchbare Stunde
 const TAG_ENDE = 21 // Ende des Rasters, letzter Slotbeginn ist 20 Uhr
@@ -208,6 +214,17 @@ function buchungenImSlot(buchungen, tag, stunde) {
   return buchungen.filter((b) => istAktiveBuchung(b) && b.tag === tag && b.stunde === stunde)
 }
 
+/* Liegt auf dem Slot eine Exklusivbuchung, ist die Fläche für alle anderen
+   zu, unabhängig von Trainer und freien Plätzen. */
+function exklusivBuchungImSlot(buchungen, tag, stunde) {
+  return buchungenImSlot(buchungen, tag, stunde).find((b) => b.exklusiv) || null
+}
+
+/* Exklusiv geht nur, solange niemand sonst gebucht hat. */
+function kannExklusivBuchen(buchungen, tag, stunde) {
+  return EXKLUSIV_MOEGLICH && buchungenImSlot(buchungen, tag, stunde).length === 0
+}
+
 function wochenSessions(buchungen, trainerId) {
   return buchungen.filter((b) => istAktiveBuchung(b) && b.trainerId === trainerId).length
 }
@@ -245,6 +262,13 @@ function pruefeSlot({ trainer, tag, stunde, buchungen, kundeId = null, jetztTag 
     return { status: 'gesperrt', grund: 'eigene_buchung', duo: false, kunden }
   }
 
+  /* Exklusivbuchung sperrt den Slot vor allen anderen, auch wenn rein
+     rechnerisch noch Plätze frei wären. */
+  const exklusiv = exklusivBuchungImSlot(buchungen, tag, stunde)
+  if (exklusiv && exklusiv.kundeId !== kundeId) {
+    return { status: 'gesperrt', grund: 'exklusiv_belegt', duo: false, kunden }
+  }
+
   if (kunden >= MAX_KUNDEN_PRO_SLOT) {
     return { status: 'gesperrt', grund: 'flaeche_voll', duo: false, kunden }
   }
@@ -265,6 +289,7 @@ function pruefeSlot({ trainer, tag, stunde, buchungen, kundeId = null, jetztTag 
     grund: null,
     duo: eigeneImSlot > 0,
     kunden,
+    exklusivMoeglich: kannExklusivBuchen(buchungen, tag, stunde),
   }
 }
 
@@ -272,7 +297,7 @@ function pruefeSlot({ trainer, tag, stunde, buchungen, kundeId = null, jetztTag 
    den buchenden Kunden bedeutet. Kernfrage: trainiere ich allein mit meinem
    Trainer oder teile ich ihn mir, und wie viele Menschen sind sonst da.
    Rein, ohne UI-Bezug — wandert später mit auf den Server. */
-function analysiereFlaeche({ buchungen, trainerListe, tag, stunde, eigenerTrainerId = null }) {
+function analysiereFlaeche({ buchungen, trainerListe, tag, stunde, eigenerTrainerId = null, exklusivGewaehlt = false }) {
   const slot = buchungenImSlot(buchungen, tag, stunde)
   const proTrainer = trainerListe
     .map((t) => ({ trainer: t, kunden: slot.filter((b) => b.trainerId === t.id).length }))
@@ -286,6 +311,8 @@ function analysiereFlaeche({ buchungen, trainerListe, tag, stunde, eigenerTraine
     duo: beiMeinemTrainer > 0, // ich wäre der zweite Kunde dieses Trainers
     andereAufFlaeche: slot.length - beiMeinemTrainer,
     trainerAufFlaeche: proTrainer.length,
+    exklusivMoeglich: kannExklusivBuchen(buchungen, tag, stunde),
+    exklusiv: exklusivGewaehlt,
   }
 }
 
@@ -415,9 +442,19 @@ function erzeugeSeedBuchungen(trainerListe, woche) {
   const rng = mulberry32(20260810)
   const buchungen = []
   let laufnummer = 0
-  const add = (trainerId, kundeId, artId, tag, stunde) => {
+  const add = (trainerId, kundeId, artId, tag, stunde, exklusiv = false) => {
     laufnummer += 1
-    buchungen.push({ id: 'seed' + laufnummer, trainerId, kundeId, artId, tag, stunde, status: 'gebucht', preis: artPreis(artId) })
+    buchungen.push({
+      id: 'seed' + laufnummer,
+      trainerId,
+      kundeId,
+      artId,
+      tag,
+      stunde,
+      status: 'gebucht',
+      preis: artPreis(artId) + (exklusiv ? EXKLUSIV_AUFPREIS : 0),
+      exklusiv,
+    })
   }
 
   const demoTag = woche.heuteIndex < 0 ? 1 : Math.min(woche.heuteIndex + 1, 5)
@@ -466,6 +503,10 @@ function erzeugeSeedBuchungen(trainerListe, woche) {
       }
     }
   }
+  /* Ein anderer Kunde hat die Fläche am Freitagmorgen exklusiv gebucht.
+     Der Slot ist damit für alle anderen dicht, unabhängig vom Trainer. */
+  add('ertan', 'k8', 'pump-uk', 4, 10, true)
+
   fuegeZukunft('chrissi', 'k1', 'pump-ok')
   fuegeZukunft('serdar', 'k6', 'boxing')
   fuegeZukunft('serdar', 'k7', 'hit')
@@ -516,6 +557,7 @@ const TAGESZEITEN = [
 /* Die eine Aussage, die der Kunde beim Buchen wissen will */
 function flaechenAussage(f, trainerName) {
   const vorname = trainerName ? trainerName.split(' ')[0] : 'deinem Trainer'
+  if (f.exklusiv) return 'die fläche ganz für dich.'
   if (f.duo) return `zu zweit bei ${vorname}.`
   if (f.andereAufFlaeche === 0) return 'die fläche gehört dir.'
   return `allein mit ${vorname}.`
@@ -524,11 +566,12 @@ function flaechenAussage(f, trainerName) {
 function flaechenNebentext(f, trainerName) {
   const vorname = trainerName ? trainerName.split(' ')[0] : 'deinem Trainer'
   const andere = f.andereAufFlaeche
+  if (f.exklusiv) return `Du buchst alle vier Plätze. Niemand außer dir und ${vorname} betritt in dieser Stunde die Fläche.`
   if (f.duo) {
     const rest = andere > 0 ? ` Dazu ${andere === 1 ? 'trainiert ein weiterer Kunde' : `trainieren ${andere} weitere Kunden`} bei anderen Trainern.` : ''
     return `Ein weiterer Kunde hat ebenfalls bei ${vorname} gebucht, ihr zwei teilt euch die Session.` + rest
   }
-  if (andere === 0) return 'Kein anderer Kunde ist zu dieser Zeit gebucht. Volle Ruhe auf der Fläche.'
+  if (andere === 0) return 'Aktuell ist kein anderer Kunde gebucht. Es kann sich aber noch jemand dazubuchen.'
   return `${vorname} betreut nur dich. ${andere === 1 ? 'Ein weiterer Kunde trainiert' : `${andere} weitere Kunden trainieren`} gleichzeitig bei anderen Trainern.`
 }
 
@@ -553,6 +596,8 @@ function grundText(grund, trainerName) {
       return name + ' ist diese Woche ausgebucht.'
     case 'eigene_buchung':
       return 'Du hast zu dieser Zeit bereits einen Termin bei uns.'
+    case 'exklusiv_belegt':
+      return 'Ein anderer Kunde hat die Fläche zu dieser Zeit exklusiv gebucht.'
     case 'flaeche_voll':
       return 'Die Fläche ist zu dieser Zeit voll. Es trainieren bereits vier Kunden gleichzeitig.'
     case 'trainer_limit':
@@ -843,6 +888,46 @@ select { font-family: var(--grotesk); }
 .platz-mit .kopf { background: var(--daten); color: #22303C; }
 .platz-mit .wer { color: var(--gedeckt); }
 .platz .kopf svg { width: 15px; height: 15px; }
+.platz-gebucht { background: var(--grund); box-shadow: inset 0 0 0 1.5px var(--tinte); }
+.platz-gebucht .kopf { background: var(--tinte); color: var(--flaeche); }
+.platz-gebucht .wer { color: var(--tinte); }
+
+/* Exklusivbuchung */
+.flaeche-exklusiv { box-shadow: 0 0 0 2px var(--tinte), var(--schatten); }
+.exklusiv-schalter {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  margin-top: 16px; padding: 14px 16px; border-radius: var(--radius-m);
+  background: var(--grund); min-height: 66px;
+}
+.exklusiv-schalter:hover { background: var(--flaeche-still); }
+.exklusiv-schalter .ex-icon {
+  width: 34px; height: 34px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--flaeche-still); color: var(--gedeckt);
+}
+.exklusiv-schalter .ex-icon svg { width: 17px; height: 17px; }
+.exklusiv-schalter .ex-txt { flex: 1; min-width: 0; line-height: 1.35; }
+.exklusiv-schalter .ex-txt strong { display: block; font-size: 14px; font-weight: 600; }
+.exklusiv-schalter .ex-txt span { font-size: 12px; color: var(--gedeckt); }
+.exklusiv-schalter .ex-preis { font-size: 14px; font-weight: 600; flex: none; }
+.exklusiv-schalter .ex-box {
+  width: 24px; height: 24px; border-radius: 8px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--flaeche); box-shadow: inset 0 0 0 1.5px var(--flaeche-still);
+  font-size: 13px; font-weight: 700;
+}
+.exklusiv-schalter.an { background: var(--tinte); }
+.exklusiv-schalter.an .ex-txt strong, .exklusiv-schalter.an .ex-preis { color: var(--flaeche); }
+.exklusiv-schalter.an .ex-txt span { color: rgba(255, 255, 255, 0.66); }
+.exklusiv-schalter.an .ex-icon { background: rgba(255, 255, 255, 0.16); color: var(--flaeche); }
+.exklusiv-schalter.an .ex-box { background: var(--flaeche); color: var(--tinte); box-shadow: none; }
+.exklusiv-plakette {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--tinte); color: var(--flaeche);
+  border-radius: var(--radius-pill); padding: 5px 12px;
+  font-size: 12px; font-weight: 600;
+}
+.exklusiv-plakette svg { width: 13px; height: 13px; }
 .flaeche-trainerzeile { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
 .flaeche-trainerzeile + .flaeche-trainerzeile { border-top: 1px solid var(--flaeche-still); }
 .flaeche-trainerzeile .txt { flex: 1; min-width: 0; }
@@ -876,6 +961,29 @@ select { font-family: var(--grotesk); }
 .blog-kachel figcaption strong { display: block; font-size: 13px; font-weight: 600; }
 .blog-kachel figcaption span { font-size: 12px; color: var(--gedeckt); line-height: 1.4; }
 
+/* Tagesauslastung als Säulenband */
+.flaeche-heute { margin-bottom: 12px; }
+.fh-kopfzeile { display: flex; gap: 12px; margin: 4px 0 16px; }
+.fh-jetzt, .fh-frei { flex: 1; background: var(--grund); border-radius: var(--radius-s); padding: 11px 13px; }
+.fh-jetzt .zahl, .fh-frei .zahl { display: block; font-size: 21px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15; }
+.fh-jetzt .label, .fh-frei .label { font-size: 11px; color: var(--gedeckt); }
+.fh-band { display: flex; gap: 3px; align-items: flex-end; }
+.fh-saeule { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.fh-stapel { display: flex; flex-direction: column; gap: 2px; width: 100%; }
+.fh-stapel i {
+  height: 11px; border-radius: 2px;
+  background: var(--flaeche-still);
+  transition: background 0.2s ease;
+}
+.fh-stapel i.voll { background: var(--daten); }
+.fh-stapel i.voll.stufe-3 { background: var(--warnung); }
+.fh-stapel i.voll.stufe-4 { background: var(--voll); }
+.fh-stunde { font-size: 10px; color: var(--leise); min-height: 13px; }
+.fh-saeule.vorbei { opacity: 0.32; }
+.fh-saeule.aktuell .fh-stunde { color: var(--tinte); font-weight: 600; }
+.fh-saeule.aktuell .fh-stapel { box-shadow: 0 0 0 2px var(--tinte); border-radius: 4px; padding: 2px; margin: -2px; }
+.fh-tipp { font-size: 13px; color: var(--gedeckt); margin: 16px 0 0; line-height: 1.45; }
+
 /* Studio-Infobereich */
 .studio-hero { margin: 0 0 18px; border-radius: var(--radius-l); overflow: hidden; box-shadow: var(--schatten); }
 .studio-hero img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; display: block; background: var(--flaeche-still); }
@@ -884,8 +992,19 @@ select { font-family: var(--grotesk); }
 .stats-reihe .zahl { font-size: 23px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
 .stats-reihe .label { font-size: 11px; color: var(--gedeckt); }
 .zitat-bubble { background: var(--grund); border-radius: 16px; padding: 14px 16px; font-size: 14px; line-height: 1.5; margin-top: 14px; }
-.galerie-strip { display: flex; gap: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -20px; padding: 2px 20px 8px; }
-.galerie-strip .blog-kachel { flex: 0 0 80%; }
+.slider { margin: 0 -20px; }
+.slider-spur {
+  display: flex; gap: 12px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  padding: 2px 20px 10px;
+  scrollbar-width: none;
+}
+.slider-spur::-webkit-scrollbar { display: none; }
+.slider-spur .blog-kachel { flex: 0 0 82%; scroll-snap-align: center; }
+.slider-punkte { display: flex; justify-content: center; gap: 6px; padding-top: 2px; }
+.slider-punkte i { width: 6px; height: 6px; border-radius: 50%; background: var(--flaeche-still); transition: background 0.2s ease, width 0.2s ease; }
+.slider-punkte i.an { width: 18px; border-radius: 3px; background: var(--tinte); }
 
 /* Buchungsbestätigung mit animiertem Haken */
 .erfolg-hintergrund {
@@ -1358,6 +1477,13 @@ function Icon({ name }) {
         <path d="M4 9v6M7 6.5v11M17 6.5v11M20 9v6M7 12h10" />
       </svg>
     )
+  if (name === 'schloss')
+    return (
+      <svg {...p}>
+        <rect x="5" y="10.5" width="14" height="10" rx="3" />
+        <path d="M8.5 10.5V7.8a3.5 3.5 0 0 1 7 0v2.7" />
+      </svg>
+    )
   if (name === 'zitat')
     return (
       <svg {...p}>
@@ -1410,22 +1536,52 @@ function Wochenleiste({ woche, aktiv, onWahl, markierteTage }) {
 
 /* Studiofotos als Blog-Galerie. Fehlende Dateien blenden ihre Kachel aus,
    sobald ein Foto in public/studio/ liegt, erscheint es automatisch. */
+/* Studiofotos. Liegt die Datei in public/studio, wird sie gezeigt, sonst
+   springt ein Platzhalter ein — so ist der Slider immer vollständig. */
 const STUDIO_BILDER = [
-  { datei: 'flaeche.jpg', titel: 'Die Fläche', text: 'Kunstrasen, Tageslicht und Platz für höchstens vier Kunden gleichzeitig.' },
-  { datei: 'boxing.jpg', titel: 'Boxing-Ecke', text: 'Am schweren Sack arbeiten wir an Technik, Timing und Schlagkraft.' },
-  { datei: 'airbike.jpg', titel: 'Airbike', text: 'Das ehrlichste Konditionsgerät im Haus, jede Sekunde zählt.' },
-  { datei: 'rack.jpg', titel: 'Functional Rack', text: 'Züge, Klimmzüge und Kabelarbeit für sauberen Kraftaufbau.' },
-  { datei: 'athletik.jpg', titel: 'Athletikfläche', text: 'Medizinbälle, Balance und Stabilität für dein Fundament.' },
-  { datei: 'equipment.jpg', titel: 'Kleingeräte', text: 'Bulgarian Bags, Balance Boards und alles für deine Beweglichkeit.' },
-  { datei: 'kraftbereich.png', titel: 'Kraftbereich', text: 'Langhanteln, Racks und Platz zum schweren Heben.' },
+  {
+    datei: 'kraftbereich.png',
+    titel: 'Kraftbereich',
+    text: 'Langhanteln, Racks und Platz zum schweren Heben.',
+    ersatz: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=700&q=70',
+  },
+  {
+    datei: 'flaeche.jpg',
+    titel: 'Die Fläche',
+    text: 'Kunstrasen, Tageslicht und Platz für höchstens vier Kunden gleichzeitig.',
+    ersatz: 'https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=700&q=70',
+  },
+  {
+    datei: 'boxing.jpg',
+    titel: 'Boxing-Ecke',
+    text: 'Am schweren Sack arbeiten wir an Technik, Timing und Schlagkraft.',
+    ersatz: 'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=700&q=70',
+  },
+  {
+    datei: 'airbike.jpg',
+    titel: 'Airbike',
+    text: 'Das ehrlichste Konditionsgerät im Haus, jede Sekunde zählt.',
+    ersatz: 'https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=700&q=70',
+  },
+  {
+    datei: 'rack.jpg',
+    titel: 'Functional Rack',
+    text: 'Züge, Klimmzüge und Kabelarbeit für sauberen Kraftaufbau.',
+    ersatz: 'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?auto=format&fit=crop&w=700&q=70',
+  },
+  {
+    datei: 'athletik.jpg',
+    titel: 'Athletikfläche',
+    text: 'Medizinbälle, Balance und Stabilität für dein Fundament.',
+    ersatz: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=700&q=70',
+  },
 ]
 
-function BlogBild({ datei, titel, text, gross }) {
-  const [fehlt, setFehlt] = useState(false)
-  if (fehlt) return null
+function BlogBild({ datei, titel, text, ersatz }) {
+  const [quelle, setQuelle] = useState('/studio/' + datei)
   return (
-    <figure className={'blog-kachel' + (gross ? ' blog-gross' : '')}>
-      <img src={'/studio/' + datei} alt={titel} loading="lazy" onError={() => setFehlt(true)} />
+    <figure className="blog-kachel">
+      <img src={quelle} alt={titel} loading="lazy" onError={() => quelle !== ersatz && setQuelle(ersatz)} />
       <figcaption>
         <strong>{titel}</strong>
         <span>{text}</span>
@@ -1434,23 +1590,106 @@ function BlogBild({ datei, titel, text, gross }) {
   )
 }
 
+/* Wischbarer Bilderstreifen mit Fangpunkten und Positionsanzeige */
+function StudioSlider({ bilder }) {
+  const [aktiv, setAktiv] = useState(0)
+  const beimScrollen = (e) => {
+    const spur = e.currentTarget
+    const kind = spur.firstElementChild
+    if (!kind) return
+    const schritt = kind.getBoundingClientRect().width + 12
+    setAktiv(Math.min(bilder.length - 1, Math.max(0, Math.round(spur.scrollLeft / schritt))))
+  }
+  return (
+    <div className="slider">
+      <div className="slider-spur" onScroll={beimScrollen}>
+        {bilder.map((b) => (
+          <BlogBild key={b.datei} {...b} />
+        ))}
+      </div>
+      <div className="slider-punkte" aria-hidden="true">
+        {bilder.map((b, i) => (
+          <i key={b.datei} className={i === aktiv ? 'an' : ''} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* Tagesauslastung des Studios als Säulenband. Jede Stunde eine Säule aus
+   vier Segmenten, ein Segment ist ein Platz. Die aktuelle Stunde ist
+   markiert, darunter der ruhigste Zeitraum als Empfehlung. */
+function FlaecheHeute({ woche, buchungen, jetztStunde }) {
+  const heute = woche.heuteIndex
+  const werte = STUNDEN.map((h) => ({
+    stunde: h,
+    belegt: heute < 0 ? 0 : buchungenImSlot(buchungen, heute, h).length,
+    vorbei: heute >= 0 && h <= jetztStunde,
+  }))
+  const kommend = werte.filter((w) => !w.vorbei)
+  const gesamtFrei = kommend.reduce((s, w) => s + (MAX_KUNDEN_PRO_SLOT - w.belegt), 0)
+  const ruhigste = kommend.filter((w) => w.belegt === 0).map((w) => w.stunde)
+  const jetzt = werte.find((w) => w.stunde === jetztStunde)
+
+  return (
+    <div className="karte flaeche-heute">
+      <div className="karten-kopf">
+        <span className="kicker">Fläche heute</span>
+        <span className="zeitstempel">max {MAX_KUNDEN_PRO_SLOT} gleichzeitig</span>
+      </div>
+
+      <div className="fh-kopfzeile">
+        <div className="fh-jetzt">
+          <span className="zahl mono">{heute < 0 ? '—' : `${jetzt ? jetzt.belegt : 0}/${MAX_KUNDEN_PRO_SLOT}`}</span>
+          <span className="label">gerade auf der Fläche</span>
+        </div>
+        <div className="fh-frei">
+          <span className="zahl mono">{gesamtFrei}</span>
+          <span className="label">freie Plätze heute</span>
+        </div>
+      </div>
+
+      <div className="fh-band" role="img" aria-label={`Auslastung heute, ${gesamtFrei} freie Plätze in den kommenden Stunden`}>
+        {werte.map((w) => (
+          <div key={w.stunde} className={'fh-saeule' + (w.vorbei ? ' vorbei' : '') + (w.stunde === jetztStunde ? ' aktuell' : '')} title={`${stundeLabel(w.stunde)} · ${w.belegt} von ${MAX_KUNDEN_PRO_SLOT}`}>
+            <span className="fh-stapel">
+              {[3, 2, 1, 0].map((i) => (
+                <i key={i} className={i < w.belegt ? 'voll stufe-' + w.belegt : ''} />
+              ))}
+            </span>
+            <span className="fh-stunde mono">{w.stunde % 3 === 1 || w.stunde === jetztStunde ? String(w.stunde).padStart(2, '0') : ''}</span>
+          </div>
+        ))}
+      </div>
+
+      <p className="fh-tipp">
+        {heute < 0
+          ? 'Heute hat das Studio geschlossen.'
+          : ruhigste.length > 0
+            ? `Am ruhigsten wird es um ${stundeLabel(ruhigste[0])} — da hast du die Fläche noch für dich.`
+            : 'Heute ist überall etwas los. Schau auf morgen für ruhigere Zeiten.'}
+      </p>
+    </div>
+  )
+}
+
 /* Flächenkarte — das Kernstück beim Buchen.
    Beantwortet in einem Blick: trainiere ich allein mit meinem Trainer oder
    zu zweit, wer steht sonst auf der Fläche und wie viel Platz bleibt.
    Die vier Plätze des Studios sind einzeln sichtbar, jeder mit dem Trainer,
    zu dem er gehört. Der eigene Platz ist hervorgehoben. */
-function FlaechenKarte({ buchungen, trainerListe, tag, stunde, eigenerTrainerId, kundeKuerzel, onProfil }) {
-  const f = analysiereFlaeche({ buchungen, trainerListe, tag, stunde, eigenerTrainerId })
+function FlaechenKarte({ buchungen, trainerListe, tag, stunde, eigenerTrainerId, kundeKuerzel, onProfil, exklusiv = false, onExklusiv = null }) {
+  const f = analysiereFlaeche({ buchungen, trainerListe, tag, stunde, eigenerTrainerId, exklusivGewaehlt: exklusiv })
   const meinTrainer = trainerListe.find((t) => t.id === eigenerTrainerId) || null
 
   const plaetze = [{ art: 'du', trainer: meinTrainer }]
   f.proTrainer.forEach(({ trainer, kunden }) => {
     for (let i = 0; i < kunden; i += 1) plaetze.push({ art: 'mit', trainer })
   })
-  while (plaetze.length < MAX_KUNDEN_PRO_SLOT) plaetze.push({ art: 'frei', trainer: null })
+  while (plaetze.length < MAX_KUNDEN_PRO_SLOT) plaetze.push({ art: exklusiv ? 'gebucht' : 'frei', trainer: null })
 
   return (
-    <div className="flaeche-karte">
+    <div className={'flaeche-karte' + (exklusiv ? ' flaeche-exklusiv' : '')}>
       <span className="kicker">Deine Fläche um {stundeLabel(stunde)}</span>
       <h3 className="flaeche-aussage">{flaechenAussage(f, meinTrainer && meinTrainer.name)}</h3>
       <p className="flaeche-neben">{flaechenNebentext(f, meinTrainer && meinTrainer.name)}</p>
@@ -1459,9 +1698,11 @@ function FlaechenKarte({ buchungen, trainerListe, tag, stunde, eigenerTrainerId,
         {plaetze.slice(0, MAX_KUNDEN_PRO_SLOT).map((p, i) => (
           <div key={i} className={'platz platz-' + p.art}>
             <span className="kopf" aria-hidden="true">
-              {p.art === 'du' ? kundeKuerzel : p.art === 'mit' ? <Icon name="trainer" /> : '·'}
+              {p.art === 'du' ? kundeKuerzel : p.art === 'mit' ? <Icon name="trainer" /> : p.art === 'gebucht' ? <Icon name="schloss" /> : '·'}
             </span>
-            <span className="wer">{p.art === 'du' ? 'du' : p.art === 'mit' ? 'bei ' + p.trainer.name.split(' ')[0] : 'frei'}</span>
+            <span className="wer">
+              {p.art === 'du' ? 'du' : p.art === 'mit' ? 'bei ' + p.trainer.name.split(' ')[0] : p.art === 'gebucht' ? 'gebucht' : 'frei'}
+            </span>
           </div>
         ))}
       </div>
@@ -1512,6 +1753,23 @@ function FlaechenKarte({ buchungen, trainerListe, tag, stunde, eigenerTrainerId,
         <p className="hinweis-klein" style={{ margin: '12px 0 0' }}>
           Andere Kunden siehst du anonym, ihre Namen bleiben privat.
         </p>
+      )}
+
+      {/* Exklusiv steht nur zur Wahl, solange der Slot leer ist */}
+      {onExklusiv && f.exklusivMoeglich && (
+        <button className={'exklusiv-schalter' + (exklusiv ? ' an' : '')} onClick={() => onExklusiv(!exklusiv)} aria-pressed={exklusiv}>
+          <span className="ex-icon" aria-hidden="true">
+            <Icon name="schloss" />
+          </span>
+          <span className="ex-txt">
+            <strong>Fläche nur für dich</strong>
+            <span>Die drei anderen Plätze bleiben leer, niemand kann dazubuchen.</span>
+          </span>
+          <span className="ex-preis mono">+{EXKLUSIV_AUFPREIS} €</span>
+          <span className="ex-box" aria-hidden="true">
+            {exklusiv ? '✓' : ''}
+          </span>
+        </button>
       )}
     </div>
   )
@@ -1599,6 +1857,7 @@ function KundenAnsicht(props) {
   const [offenerGrund, setOffenerGrund] = useState(null)
   const [modalTrainerId, setModalTrainerId] = useState(null)
   const [erfolg, setErfolg] = useState(null) // Daten der eben bestätigten Buchung
+  const [exklusiv, setExklusiv] = useState(false) // Fläche allein gebucht
 
   const kunde = kunden.find((k) => k.id === kundeId) || null
   const art = TRAININGSARTEN.find((a) => a.id === artId) || null
@@ -1649,9 +1908,20 @@ function KundenAnsicht(props) {
   }
 
   const buchen = () => {
-    aktionen.buche({ kundeId, trainerId: auswahl.trainerId, artId, tag: auswahl.tag, stunde: auswahl.stunde, preis: art.preis })
-    setErfolg({ tag: auswahl.tag, stunde: auswahl.stunde, trainerId: auswahl.trainerId, artId })
+    const exklusivJetzt = exklusiv && kannExklusivBuchen(buchungen, auswahl.tag, auswahl.stunde)
+    const preis = art.preis + (exklusivJetzt ? EXKLUSIV_AUFPREIS : 0)
+    aktionen.buche({
+      kundeId,
+      trainerId: auswahl.trainerId,
+      artId,
+      tag: auswahl.tag,
+      stunde: auswahl.stunde,
+      preis,
+      exklusiv: exklusivJetzt,
+    })
+    setErfolg({ tag: auswahl.tag, stunde: auswahl.stunde, trainerId: auswahl.trainerId, artId, exklusiv: exklusivJetzt, preis })
     setAuswahl(null)
+    setExklusiv(false)
     setFlow(null)
   }
 
@@ -1873,6 +2143,7 @@ function KundenAnsicht(props) {
                     onClick={() => {
                       setSelTag(t.index)
                       setAuswahl(null)
+                      setExklusiv(false)
                       setOffenerGrund(null)
                     }}
                   >
@@ -1918,6 +2189,7 @@ function KundenAnsicht(props) {
                     } else {
                       if (s.grund === 'vergangen') titel = 'Vorbei'
                       else if (s.grund === 'arbeitszeit') titel = ohnePraeferenz ? 'Kein Trainer da' : `${wunschTrainer.name.split(' ')[0]} arbeitet nicht`
+                      else if (s.grund === 'exklusiv_belegt') titel = 'Exklusiv vergeben'
                       else if (s.grund === 'flaeche_voll') titel = 'Fläche voll'
                       else if (s.grund === 'geblockt') titel = 'Geblockt'
                       else if (s.grund === 'eigene_buchung') titel = 'Dein Termin'
@@ -1938,6 +2210,7 @@ function KundenAnsicht(props) {
                         onClick={() => {
                           if (buchbar) {
                             setAuswahl({ tag: selTag, stunde: s.stunde, trainerId: s.trainerId, duo: s.duo })
+                            setExklusiv(false)
                             setOffenerGrund(null)
                           } else {
                             setOffenerGrund(offenerGrund === s.stunde ? null : s.stunde)
@@ -1979,6 +2252,7 @@ function KundenAnsicht(props) {
                     onUebernehmen={(alt) => {
                       setSelTag(alt.tag)
                       setAuswahl({ tag: alt.tag, stunde: alt.stunde, trainerId: alt.trainerId, duo: alt.duo })
+                      setExklusiv(false)
                       setOffenerGrund(null)
                     }}
                   />
@@ -1995,6 +2269,8 @@ function KundenAnsicht(props) {
                   eigenerTrainerId={auswahl.trainerId}
                   kundeKuerzel={kunde.name.split(' ').map((n) => n[0]).join('')}
                   onProfil={setModalTrainerId}
+                  exklusiv={exklusiv}
+                  onExklusiv={setExklusiv}
                 />
                 <button className="knopf-primaer" style={{ width: '100%', marginTop: 14 }} onClick={() => setFlow('checkout')}>
                   {woche.tage[auswahl.tag].label} {stundeLabel(auswahl.stunde)} · Weiter
@@ -2014,8 +2290,9 @@ function KundenAnsicht(props) {
                 ['Trainer', trainerById(auswahl.trainerId).name],
                 ['Termin', `${woche.tage[auswahl.tag].label} ${woche.tage[auswahl.tag].datumLabel} ${stundeLabel(auswahl.stunde)}`],
                 ['Dauer', `${art.dauer} Minuten`],
-                ['Auf der Fläche', `${belegungAuswahl} von ${MAX_KUNDEN_PRO_SLOT} belegt`],
-                ['Preis', euro(art.preis)],
+                ['Auf der Fläche', exklusiv ? 'nur du, exklusiv' : `${belegungAuswahl} von ${MAX_KUNDEN_PRO_SLOT} belegt`],
+                ...(exklusiv ? [['Exklusiv-Aufpreis', euro(EXKLUSIV_AUFPREIS)]] : []),
+                ['Preis', euro(art.preis + (exklusiv ? EXKLUSIV_AUFPREIS : 0))],
               ].map(([label, wert], i) => (
                 <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, paddingTop: i === 0 ? 0 : 12 }}>
                   <span className="gedeckt">{label}</span>
@@ -2033,6 +2310,8 @@ function KundenAnsicht(props) {
               eigenerTrainerId={auswahl.trainerId}
               kundeKuerzel={kunde.name.split(' ').map((n) => n[0]).join('')}
               onProfil={setModalTrainerId}
+              exklusiv={exklusiv}
+              onExklusiv={setExklusiv}
             />
             <p className="hinweis-klein" style={{ marginTop: 14 }}>
               Dein Termin ist mit der Buchung fest eingetragen. Stornieren kannst du bis {STORNO_FRIST_STUNDEN} Stunden vorher.
@@ -2116,36 +2395,7 @@ function KundenAnsicht(props) {
             </div>
           </div>
 
-          <div className="karte" style={{ marginBottom: 12 }}>
-            <div className="karten-kopf">
-              <span className="kicker">Fläche heute</span>
-              <span className="zeitstempel">max {MAX_KUNDEN_PRO_SLOT} gleichzeitig</span>
-            </div>
-            <p className="gedeckt" style={{ fontSize: 14, margin: '0 0 12px' }}>
-              So voll ist es heute im Studio.
-            </p>
-            <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 56 }}>
-              {STUNDEN.map((h) => {
-                const n = woche.heuteIndex < 0 ? 0 : buchungenImSlot(buchungen, woche.heuteIndex, h).length
-                return (
-                  <div key={h} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }} title={`${stundeLabel(h)} · ${n}/4`}>
-                    <div
-                      style={{
-                        height: Math.max(4, (n / MAX_KUNDEN_PRO_SLOT) * 100) + '%',
-                        background: n >= MAX_KUNDEN_PRO_SLOT ? 'var(--voll)' : n >= KNAPP_AB_KUNDEN ? 'var(--warnung)' : 'var(--daten)',
-                        borderRadius: 3,
-                        opacity: n === 0 ? 0.3 : 1,
-                      }}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-              <span className="mono hinweis-klein">07</span>
-              <span className="mono hinweis-klein">20 Uhr</span>
-            </div>
-          </div>
+          <FlaecheHeute woche={woche} buchungen={buchungen} jetztStunde={woche.jetztStunde} />
 
           <span className="kicker" style={{ marginTop: 22, textAlign: 'center' }}>
             Bereit für mehr
@@ -2185,6 +2435,12 @@ function KundenAnsicht(props) {
                     <div className="hinweis-klein">
                       {woche.tage[b.tag].datumLabel} · {STATUS_LABEL[b.status]}
                     </div>
+                    {b.exklusiv && (
+                      <span className="exklusiv-plakette" style={{ marginTop: 8 }}>
+                        <Icon name="schloss" />
+                        Fläche exklusiv
+                      </span>
+                    )}
                     {istAktiveBuchung(b) &&
                       (stornierbar ? (
                         <button style={{ marginTop: 12, background: 'var(--grund)', fontSize: 14 }} onClick={() => aktionen.storniere(b)}>
@@ -2289,11 +2545,7 @@ function KundenAnsicht(props) {
           <p className="gedeckt" style={{ marginBottom: 12 }}>
             Kunstrasen, Tageslicht und Geräte, die wir wirklich benutzen.
           </p>
-          <div className="galerie-strip">
-            {STUDIO_BILDER.map((b) => (
-              <BlogBild key={b.datei} {...b} />
-            ))}
-          </div>
+          <StudioSlider bilder={STUDIO_BILDER} />
         </div>
       )}
 
@@ -2346,6 +2598,15 @@ function KundenAnsicht(props) {
                       {woche.tage[erfolg.tag].label} {woche.tage[erfolg.tag].datumLabel} {stundeLabel(erfolg.stunde)}
                     </span>
                   </div>
+                  {erfolg.exklusiv && (
+                    <div className="zeile">
+                      <span className="gedeckt">Fläche</span>
+                      <span className="exklusiv-plakette">
+                        <Icon name="schloss" />
+                        Exklusiv
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <button
                   className="knopf-primaer"
@@ -2506,6 +2767,12 @@ function TrainerAnsicht(props) {
                     <div className="hinweis-klein">
                       {a.name} · {a.dauer} Min
                     </div>
+                    {b.exklusiv && (
+                      <span className="exklusiv-plakette" style={{ marginTop: 8 }}>
+                        <Icon name="schloss" />
+                        Fläche exklusiv
+                      </span>
+                    )}
                     <p style={{ margin: '8px 0 0', fontSize: 14 }}>{k.ziele}</p>
                   </div>
                 </div>
