@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { LOGO_DATA_URI } from './logo.js'
 
 /* ============================================================================
    BETTERDAYZ — Buchungsplattform für ein geschlossenes Personal-Training-Studio
@@ -864,6 +865,90 @@ select { font-family: var(--grotesk); }
 .modal-kopf { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
 .modal-schliessen { position: absolute; top: 20px; right: 20px; width: 34px; height: 34px; padding: 0; border-radius: 50%; background: var(--grund); display: flex; align-items: center; justify-content: center; font-size: 15px; min-height: 34px; }
 
+/* Splashscreen — dunkler Aurora-Verlauf, Logo steigt sanft auf.
+   Orientiert an Opal: Vollbild, ein zentriertes Zeichen, sonst nichts. */
+.splash {
+  position: fixed; top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 430px; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: #07080A;
+  overflow: hidden;
+}
+/* Während des Ausblendens sollen Tipps schon die App erreichen */
+.splash-aus { animation: splashRaus 0.62s cubic-bezier(0.4, 0, 0.2, 1) forwards; pointer-events: none; }
+@keyframes splashRaus { to { opacity: 0; visibility: hidden; } }
+.splash-aurora {
+  position: absolute; inset: -25%;
+  background:
+    radial-gradient(40% 42% at 26% 30%, rgba(96, 148, 255, 0.95), transparent 64%),
+    radial-gradient(36% 38% at 74% 64%, rgba(214, 118, 236, 0.85), transparent 64%),
+    radial-gradient(48% 50% at 66% 20%, rgba(64, 216, 208, 0.7), transparent 66%),
+    radial-gradient(42% 44% at 30% 76%, rgba(255, 156, 112, 0.62), transparent 64%);
+  filter: blur(58px) saturate(1.25);
+  animation: auroraWabern 13s ease-in-out infinite;
+}
+@keyframes auroraWabern {
+  0%   { transform: scale(1) rotate(0deg) translate3d(0, 0, 0); opacity: 0.85; }
+  33%  { transform: scale(1.18) rotate(42deg) translate3d(3%, -4%, 0); opacity: 1; }
+  66%  { transform: scale(1.08) rotate(-28deg) translate3d(-4%, 3%, 0); opacity: 0.92; }
+  100% { transform: scale(1) rotate(0deg) translate3d(0, 0, 0); opacity: 0.85; }
+}
+/* Vignette legt sich über die Aurora, damit das Logo klar steht */
+.splash-vignette {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(56% 44% at 50% 50%, rgba(7, 8, 10, 0.5) 0%, rgba(7, 8, 10, 0.3) 42%, rgba(7, 8, 10, 0.1) 72%, transparent 100%),
+    radial-gradient(80% 64% at 50% 50%, transparent 40%, rgba(7, 8, 10, 0.42) 78%, rgba(7, 8, 10, 0.86) 100%);
+}
+.splash-mitte { position: relative; display: flex; flex-direction: column; align-items: center; }
+.splash-logo {
+  width: 116px; height: 116px;
+  /* Das Logo ist schwarz auf weiß. Invertiert plus screen blendet das
+     Weiß zu Schwarz und lässt den Untergrund durch, das Zeichen bleibt hell. */
+  filter: invert(1);
+  mix-blend-mode: screen;
+  animation: logoAuf 1.15s cubic-bezier(0.16, 1, 0.3, 1) both, logoAtmen 3.4s ease-in-out 1.15s infinite;
+}
+@keyframes logoAuf {
+  0%   { opacity: 0; transform: scale(0.82); filter: invert(1) blur(9px); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: scale(1); filter: invert(1) blur(0); }
+}
+@keyframes logoAtmen {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.035); }
+}
+/* Weicher Lichtschein hinter dem Logo */
+.splash-schein {
+  position: absolute; top: 50%; left: 50%; width: 250px; height: 250px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.08) 42%, transparent 68%);
+  animation: scheinPuls 3.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes scheinPuls {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 0.9; transform: translate(-50%, -50%) scale(1.14); }
+}
+.splash-ladebalken {
+  position: absolute; bottom: calc(56px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+  width: 116px; height: 2px; border-radius: 1px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+.splash-ladebalken i {
+  display: block; height: 100%; width: 100%; border-radius: 1px;
+  background: rgba(255, 255, 255, 0.85);
+  transform-origin: left center;
+  animation: ladeZug 2.05s cubic-bezier(0.5, 0, 0.2, 1) forwards;
+}
+@keyframes ladeZug { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .splash-aurora, .splash-schein { animation: none; }
+  .splash-logo { animation: none; opacity: 1; }
+  .splash-ladebalken i { animation: none; transform: scaleX(1); }
+}
+
 /* Zugang */
 .zugang-hero { padding: 40px 0 30px; text-align: center; }
 .zugang-hero h1 { font-size: 40px; margin-bottom: 10px; }
@@ -878,6 +963,37 @@ select { font-family: var(--grotesk); }
 /* ----------------------------------------------------------------------------
    7. REACT-KOMPONENTEN
 ---------------------------------------------------------------------------- */
+
+/* Splashscreen. Läuft einmal beim Start, blendet sich selbst aus und meldet
+   das Ende über onFertig. Reagiert auf reduzierte Bewegung, dann verkürzt. */
+function Splash({ onFertig }) {
+  const [geht, setGeht] = useState(false)
+
+  useEffect(() => {
+    const knapp = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const halten = knapp ? 700 : 2150
+    const raus = setTimeout(() => setGeht(true), halten)
+    const weg = setTimeout(() => onFertig(), halten + 620)
+    return () => {
+      clearTimeout(raus)
+      clearTimeout(weg)
+    }
+  }, [onFertig])
+
+  return (
+    <div className={'splash' + (geht ? ' splash-aus' : '')} role="status" aria-label="BetterDayz wird geladen">
+      <div className="splash-aurora" aria-hidden="true" />
+      <div className="splash-vignette" aria-hidden="true" />
+      <div className="splash-mitte">
+        <div className="splash-schein" aria-hidden="true" />
+        <img className="splash-logo" src={LOGO_DATA_URI} alt="BetterDayz" width="116" height="116" />
+      </div>
+      <div className="splash-ladebalken" aria-hidden="true">
+        <i />
+      </div>
+    </div>
+  )
+}
 
 /* Dünne Strich-Icons im stoic-Stil */
 function Icon({ name }) {
@@ -2144,6 +2260,8 @@ export default function App() {
   const [kunden, setKunden] = useState(start.kunden)
   const [meldungen, setMeldungen] = useState([])
   const [ansicht, setAnsicht] = useState('kunde')
+  const [splashLaeuft, setSplashLaeuft] = useState(true)
+  const splashFertig = useMemo(() => () => setSplashLaeuft(false), [])
 
   const aktionen = useMemo(
     () => ({
@@ -2191,6 +2309,7 @@ export default function App() {
   return (
     <div className="app">
       <style>{CSS}</style>
+      {splashLaeuft && <Splash onFertig={splashFertig} />}
       <header className="topbar">
         <span className="marke-name">betterdayz.</span>
         <div className="ansicht-schalter" role="group" aria-label="Ansicht wechseln">
