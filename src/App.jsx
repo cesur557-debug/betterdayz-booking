@@ -239,6 +239,27 @@ function pruefeSlot({ trainer, tag, stunde, buchungen, kundeId = null, jetztTag 
   }
 }
 
+/* Analysiert, wer zu einem Zeitpunkt auf der Fläche steht und was das für
+   den buchenden Kunden bedeutet. Kernfrage: trainiere ich allein mit meinem
+   Trainer oder teile ich ihn mir, und wie viele Menschen sind sonst da.
+   Rein, ohne UI-Bezug — wandert später mit auf den Server. */
+function analysiereFlaeche({ buchungen, trainerListe, tag, stunde, eigenerTrainerId = null }) {
+  const slot = buchungenImSlot(buchungen, tag, stunde)
+  const proTrainer = trainerListe
+    .map((t) => ({ trainer: t, kunden: slot.filter((b) => b.trainerId === t.id).length }))
+    .filter((x) => x.kunden > 0)
+  const beiMeinemTrainer = eigenerTrainerId ? slot.filter((b) => b.trainerId === eigenerTrainerId).length : 0
+  return {
+    belegt: slot.length,
+    frei: MAX_KUNDEN_PRO_SLOT - slot.length,
+    proTrainer,
+    beiMeinemTrainer,
+    duo: beiMeinemTrainer > 0, // ich wäre der zweite Kunde dieses Trainers
+    andereAufFlaeche: slot.length - beiMeinemTrainer,
+    trainerAufFlaeche: proTrainer.length,
+  }
+}
+
 /* Trainer, die eine Trainingsart anbieten und diese Woche noch buchbar sind. */
 function buchbareTrainer({ trainerListe, artId, buchungen }) {
   return trainerListe.filter((t) => {
@@ -454,6 +475,31 @@ function slotDatum(woche, tag, stunde) {
 function istStornierbar(woche, jetzt, buchung) {
   const start = slotDatum(woche, buchung.tag, buchung.stunde)
   return start.getTime() - jetzt.getTime() > STORNO_FRIST_STUNDEN * 3600 * 1000
+}
+
+/* Tageszeiten für die Gruppierung der Slots */
+const TAGESZEITEN = [
+  { id: 'vormittag', name: 'Vormittag', von: 7, bis: 12, icon: 'sonnenaufgang' },
+  { id: 'nachmittag', name: 'Nachmittag', von: 12, bis: 17, icon: 'sonne' },
+  { id: 'abend', name: 'Abend', von: 17, bis: 21, icon: 'mond' },
+]
+
+/* Die eine Aussage, die der Kunde beim Buchen wissen will */
+function flaechenAussage(f, trainerName) {
+  const vorname = trainerName ? trainerName.split(' ')[0] : 'deinem Trainer'
+  if (f.duo) return `zu zweit bei ${vorname}.`
+  if (f.andereAufFlaeche === 0) return 'die fläche gehört dir.'
+  return `allein mit ${vorname}.`
+}
+
+function flaechenNebentext(f) {
+  const andere = f.andereAufFlaeche
+  if (f.duo) {
+    const rest = andere > 0 ? ` Dazu ${andere === 1 ? 'trainiert eine weitere Person' : `trainieren ${andere} weitere Personen`} bei anderen Trainern.` : ''
+    return 'Ihr zwei teilt euch die Aufmerksamkeit.' + rest
+  }
+  if (andere === 0) return 'Niemand sonst ist zu dieser Zeit gebucht. Volle Ruhe auf der Fläche.'
+  return `${andere === 1 ? 'Eine weitere Person trainiert' : `${andere} weitere Personen trainieren`} gleichzeitig bei anderen Trainern.`
 }
 
 function tageszeitGruss(jetzt) {
@@ -697,7 +743,100 @@ select { font-family: var(--grotesk); }
 .chip-punkt { width: 8px; height: 8px; border-radius: 50%; background: var(--daten); }
 .chip-still { background: var(--grund); color: var(--gedeckt); }
 
-/* Slot-Kacheln */
+/* Tagesleiste mit Verfügbarkeitspunkt (Preply-Muster) */
+.tagesleiste { display: flex; gap: 6px; margin-bottom: 6px; }
+.tagesleiste .tag {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: transparent; border-radius: var(--radius-m); padding: 10px 2px 8px; min-height: 74px;
+}
+.tagesleiste .tag .kuerzel { font-size: 11px; font-weight: 500; color: var(--gedeckt); }
+.tagesleiste .tag .zahl { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+.tagesleiste .tag .frei-punkt { width: 5px; height: 5px; border-radius: 50%; background: var(--daten); margin-top: 1px; }
+.tagesleiste .tag .frei-punkt.ohne { background: transparent; }
+.tagesleiste .tag[aria-selected="true"] { background: var(--akzent); }
+.tagesleiste .tag[aria-selected="true"] .kuerzel { color: rgba(255, 255, 255, 0.6); }
+.tagesleiste .tag[aria-selected="true"] .zahl { color: var(--akzent-text); }
+.tagesleiste .tag[aria-selected="true"] .frei-punkt { background: rgba(255, 255, 255, 0.85); }
+.tagesleiste .tag:disabled { opacity: 0.32; }
+.tages-zusammenfassung { font-size: 13px; color: var(--gedeckt); margin: 0 0 18px; }
+
+/* Zeitslots nach Tageszeit gruppiert */
+.zeitgruppe { margin-bottom: 22px; }
+.zeitgruppe-kopf { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.zeitgruppe-kopf svg { width: 17px; height: 17px; color: var(--gedeckt); }
+.zeitgruppe-kopf span { font-size: 14px; font-weight: 600; }
+.zeitgruppe-kopf .anzahl { margin-left: auto; font-size: 12px; font-weight: 500; color: var(--leise); }
+.slot-zeile {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 14px 18px; min-height: 62px; margin-bottom: 8px;
+  border-radius: var(--radius-m); background: var(--flaeche); box-shadow: var(--schatten);
+}
+.slot-zeile .zeit { font-family: var(--mono); font-size: 17px; font-weight: 500; letter-spacing: -0.02em; width: 62px; flex: none; }
+.slot-zeile .lage { flex: 1; min-width: 0; font-size: 13px; color: var(--gedeckt); }
+.slot-zeile .lage strong { display: block; font-size: 14px; font-weight: 600; color: var(--tinte); }
+.slot-zeile .punkte { display: flex; gap: 4px; flex: none; }
+.slot-zeile .punkte i { width: 7px; height: 7px; border-radius: 50%; background: var(--flaeche-still); }
+.slot-zeile .punkte i.belegt { background: var(--daten); }
+.slot-zeile[data-lage="duo"] .lage strong { color: var(--warnung); }
+.slot-zeile[data-status="gesperrt"] { background: transparent; box-shadow: none; }
+.slot-zeile[data-status="gesperrt"] .zeit, .slot-zeile[data-status="gesperrt"] .lage strong { color: var(--leise); }
+.slot-zeile[data-status="gesperrt"] .punkte i.belegt { background: var(--voll); }
+.slot-zeile[data-status="gesperrt"]:hover { background: rgba(255, 255, 255, 0.55); }
+.slot-zeile[aria-pressed="true"] { background: var(--akzent); }
+.slot-zeile[aria-pressed="true"] .zeit, .slot-zeile[aria-pressed="true"] .lage strong { color: var(--akzent-text); }
+.slot-zeile[aria-pressed="true"] .lage { color: rgba(255, 255, 255, 0.62); }
+.slot-zeile[aria-pressed="true"] .punkte i { background: rgba(255, 255, 255, 0.28); }
+.slot-zeile[aria-pressed="true"] .punkte i.belegt { background: var(--akzent-text); }
+
+/* Flächenkarte — zeigt, mit wem du auf der Fläche stehst */
+.flaeche-karte { border-radius: var(--radius-l); padding: 22px 20px; background: var(--flaeche); box-shadow: var(--schatten); margin-top: 14px; }
+.flaeche-aussage { font-size: 21px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.2; text-transform: lowercase; margin: 6px 0 4px; }
+.flaeche-neben { font-size: 14px; color: var(--gedeckt); margin: 0 0 18px; }
+.plaetze-reihe { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
+.platz {
+  border-radius: var(--radius-s); padding: 12px 6px 10px; text-align: center;
+  background: var(--grund); min-height: 78px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+}
+.platz .kopf {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600;
+  background: var(--flaeche-still); color: var(--gedeckt);
+}
+.platz .wer { font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--leise); }
+.platz-frei { background: transparent; box-shadow: inset 0 0 0 1.5px var(--flaeche-still); }
+.platz-frei .kopf { background: transparent; box-shadow: inset 0 0 0 1.5px var(--flaeche-still); color: var(--leise); }
+.platz-du { background: var(--akzent); }
+.platz-du .kopf { background: rgba(255, 255, 255, 0.16); color: var(--akzent-text); }
+.platz-du .wer { color: rgba(255, 255, 255, 0.72); }
+.platz-mit .kopf { background: var(--daten); color: #22303C; }
+.platz-mit .wer { color: var(--gedeckt); }
+.flaeche-trainerzeile { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
+.flaeche-trainerzeile + .flaeche-trainerzeile { border-top: 1px solid var(--flaeche-still); }
+.flaeche-trainerzeile .txt { flex: 1; min-width: 0; }
+.flaeche-trainerzeile .txt strong { display: block; font-size: 14px; font-weight: 600; }
+.flaeche-trainerzeile .txt span { font-size: 12px; color: var(--gedeckt); }
+
+/* Host-Passport für Trainerprofile (Airbnb-Muster) */
+.passport-karte {
+  display: flex; align-items: center; gap: 18px;
+  border-radius: var(--radius-l); padding: 22px 20px; margin-bottom: 22px;
+  background: var(--flaeche); box-shadow: 0 6px 20px rgba(15, 17, 19, 0.08);
+}
+.passport-links { flex: 1; min-width: 0; text-align: center; }
+.passport-name { font-size: 27px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.05; margin-top: 10px; text-transform: lowercase; }
+.passport-rolle { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 500; margin-top: 4px; }
+.passport-rechts { width: 108px; flex: none; }
+.passport-wert { text-align: left; padding: 8px 0; }
+.passport-wert + .passport-wert { border-top: 1px solid var(--flaeche-still); }
+.passport-wert .zahl { font-size: 21px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
+.passport-wert .label { font-size: 11px; color: var(--gedeckt); }
+.passport-zeile { display: flex; align-items: flex-start; gap: 14px; padding: 11px 0; font-size: 15px; }
+.passport-zeile svg { width: 20px; height: 20px; flex: none; margin-top: 1px; color: var(--tinte); }
+.passport-zeile .passport-text { flex: 1; min-width: 0; }
+
+/* Slot-Kacheln (weiterhin für kompakte Ansichten) */
 .slot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .slot-kachel {
   position: relative;
@@ -1063,6 +1202,62 @@ function Icon({ name }) {
         <circle cx="7" cy="17" r="1.8" fill="currentColor" stroke="none" />
       </svg>
     )
+  if (name === 'sonnenaufgang')
+    return (
+      <svg {...p}>
+        <path d="M12 4v3M5.6 7.6l2.1 2.1M2.5 14h2M19.5 14h2M16.3 9.7l2.1-2.1" />
+        <path d="M7.5 14a4.5 4.5 0 0 1 9 0" />
+        <path d="M2.5 18h19" />
+      </svg>
+    )
+  if (name === 'sonne')
+    return (
+      <svg {...p}>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4" />
+      </svg>
+    )
+  if (name === 'mond')
+    return (
+      <svg {...p}>
+        <path d="M20 14.2A8.2 8.2 0 0 1 9.8 4 8.2 8.2 0 1 0 20 14.2Z" />
+      </svg>
+    )
+  if (name === 'medaille')
+    return (
+      <svg {...p}>
+        <circle cx="12" cy="14.5" r="5.5" />
+        <path d="M8.5 9 6 2.5h12L15.5 9" />
+      </svg>
+    )
+  if (name === 'ziel')
+    return (
+      <svg {...p}>
+        <circle cx="12" cy="12" r="8.5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="12" cy="12" r="0.8" fill="currentColor" stroke="none" />
+      </svg>
+    )
+  if (name === 'urkunde')
+    return (
+      <svg {...p}>
+        <path d="M6 3h12v13l-6 3-6-3V3Z" />
+        <path d="M9.5 9.5 11 11l3.5-3.5" />
+      </svg>
+    )
+  if (name === 'hantel')
+    return (
+      <svg {...p}>
+        <path d="M4 9v6M7 6.5v11M17 6.5v11M20 9v6M7 12h10" />
+      </svg>
+    )
+  if (name === 'zitat')
+    return (
+      <svg {...p}>
+        <path d="M9.5 6.5C7 7.6 5.5 10 5.5 12.8c0 2.2 1.3 3.7 3.1 3.7 1.6 0 2.8-1.2 2.8-2.8 0-1.5-1.1-2.7-2.6-2.7-.3 0-.6 0-.8.1.3-1.4 1.3-2.6 2.6-3.3l-1.1-1.3Z" />
+        <path d="M18 6.5c-2.5 1.1-4 3.5-4 6.3 0 2.2 1.3 3.7 3.1 3.7 1.6 0 2.8-1.2 2.8-2.8 0-1.5-1.1-2.7-2.6-2.7-.3 0-.6 0-.8.1.3-1.4 1.3-2.6 2.6-3.3L18 6.5Z" />
+      </svg>
+    )
   return null
 }
 
@@ -1103,40 +1298,99 @@ function Wochenleiste({ woche, aktiv, onWahl, markierteTage }) {
   )
 }
 
-/* Zeigt für einen Slot, welche Trainer auf der Fläche stehen und wie viele
-   Kunden jeder gerade betreut. Ein Tipp auf einen Trainer öffnet sein Profil. */
-function FlaechenBelegung({ buchungen, trainerListe, tag, stunde, eigenerTrainerId, onProfil }) {
-  const slot = buchungenImSlot(buchungen, tag, stunde)
-  const proTrainer = trainerListe
-    .map((t) => ({ t, anzahl: slot.filter((b) => b.trainerId === t.id).length }))
-    .filter((x) => x.anzahl > 0)
+/* Flächenkarte — das Kernstück beim Buchen.
+   Beantwortet in einem Blick: trainiere ich allein mit meinem Trainer oder
+   zu zweit, wer steht sonst auf der Fläche und wie viel Platz bleibt.
+   Die vier Plätze des Studios sind einzeln sichtbar, jeder mit dem Trainer,
+   zu dem er gehört. Der eigene Platz ist hervorgehoben. */
+function FlaechenKarte({ buchungen, trainerListe, tag, stunde, eigenerTrainerId, kundeKuerzel, onProfil }) {
+  const f = analysiereFlaeche({ buchungen, trainerListe, tag, stunde, eigenerTrainerId })
+  const meinTrainer = trainerListe.find((t) => t.id === eigenerTrainerId) || null
+
+  const plaetze = [{ art: 'du', trainer: meinTrainer }]
+  f.proTrainer.forEach(({ trainer, kunden }) => {
+    for (let i = 0; i < kunden; i += 1) plaetze.push({ art: 'mit', trainer })
+  })
+  while (plaetze.length < MAX_KUNDEN_PRO_SLOT) plaetze.push({ art: 'frei', trainer: null })
+
   return (
-    <div style={{ marginTop: 16 }}>
-      <span className="kicker">Auf der Fläche um {stundeLabel(stunde)}</span>
-      {proTrainer.length === 0 ? (
+    <div className="flaeche-karte">
+      <span className="kicker">Deine Fläche um {stundeLabel(stunde)}</span>
+      <h3 className="flaeche-aussage">{flaechenAussage(f, meinTrainer && meinTrainer.name)}</h3>
+      <p className="flaeche-neben">{flaechenNebentext(f)}</p>
+
+      <div className="plaetze-reihe" role="img" aria-label={`${f.belegt + 1} von ${MAX_KUNDEN_PRO_SLOT} Plätzen belegt, ${f.frei - 1} bleiben frei`}>
+        {plaetze.slice(0, MAX_KUNDEN_PRO_SLOT).map((p, i) => (
+          <div key={i} className={'platz platz-' + p.art}>
+            <span className="kopf" aria-hidden="true">
+              {p.art === 'du' ? kundeKuerzel : p.art === 'mit' ? p.trainer.monogramm : '·'}
+            </span>
+            <span className="wer">{p.art === 'du' ? 'du' : p.art === 'mit' ? p.trainer.name.split(' ')[0] : 'frei'}</span>
+          </div>
+        ))}
+      </div>
+
+      <span className="kicker">Trainer auf der Fläche</span>
+      {meinTrainer && (
+        <button className="flaeche-trainerzeile" onClick={() => onProfil(meinTrainer.id)} aria-haspopup="dialog" style={{ background: 'transparent', width: '100%', padding: '10px 0', minHeight: 0, borderRadius: 0 }}>
+          <span className="monogramm monogramm-mini" aria-hidden="true">
+            {meinTrainer.monogramm}
+          </span>
+          <span className="txt" style={{ textAlign: 'left' }}>
+            <strong>{meinTrainer.name}</strong>
+            <span>{f.duo ? 'betreut dich und eine weitere Person' : 'betreut nur dich'}</span>
+          </span>
+          <span className="pfeil" style={{ color: 'var(--leise)' }}>
+            ›
+          </span>
+        </button>
+      )}
+      {f.proTrainer
+        .filter((x) => x.trainer.id !== eigenerTrainerId)
+        .map(({ trainer, kunden }) => (
+          <button
+            key={trainer.id}
+            className="flaeche-trainerzeile"
+            onClick={() => onProfil(trainer.id)}
+            aria-haspopup="dialog"
+            style={{ background: 'transparent', width: '100%', padding: '10px 0', minHeight: 0, borderRadius: 0 }}
+          >
+            <span className="monogramm monogramm-mini" aria-hidden="true">
+              {trainer.monogramm}
+            </span>
+            <span className="txt" style={{ textAlign: 'left' }}>
+              <strong>{trainer.name}</strong>
+              <span>{kunden === 1 ? 'betreut eine Person' : `betreut ${kunden} Personen`}</span>
+            </span>
+            <span className="pfeil" style={{ color: 'var(--leise)' }}>
+              ›
+            </span>
+          </button>
+        ))}
+      {f.proTrainer.filter((x) => x.trainer.id !== eigenerTrainerId).length === 0 && !meinTrainer && (
         <p className="hinweis-klein" style={{ margin: 0 }}>
-          Noch niemand. Du hast die Fläche zu dieser Zeit bisher für dich.
+          Noch niemand gebucht.
         </p>
-      ) : (
-        <div className="chip-liste">
-          {proTrainer.map(({ t, anzahl }) => (
-            <button key={t.id} className="chip" onClick={() => onProfil(t.id)} aria-haspopup="dialog" style={{ minHeight: 38 }}>
-              <span className="chip-punkt" />
-              {t.name.split(' ')[0]}
-              {t.id === eigenerTrainerId ? ' · dein Trainer' : ''} · {anzahl === 1 ? '1 Kunde' : anzahl + ' Kunden'}
-            </button>
-          ))}
-        </div>
       )}
     </div>
   )
 }
 
-/* Popup mit dem vollständigen Trainerprofil als Bottom-Sheet. */
+/* Trainerprofil als Passport-Bottom-Sheet (Airbnb-Muster).
+   Kopfkarte mit Monogramm, Name und drei Kennzahlen, darunter das Profil
+   als Zeilen mit Icon — so lässt es sich zeilenweise überfliegen. */
 function TrainerModal({ trainer, buchungen, onClose }) {
   if (!trainer) return null
   const sessions = wochenSessions(buchungen, trainer.id)
   const arten = TRAININGSARTEN.filter((a) => trainer.arten.includes(a.id))
+  const auslastung = Math.round((sessions / Math.max(1, trainer.kontingent)) * 100)
+  const zeilen = [
+    { icon: 'ziel', inhalt: <>Schwerpunkte: {trainer.schwerpunkte.join(', ')}</> },
+    { icon: 'hantel', inhalt: <>Bietet an: {arten.map((a) => `${a.name} (${euro(a.preis)})`).join(', ')}</> },
+    { icon: 'urkunde', inhalt: <>Zertifikate: {trainer.zertifikate.join(', ')}</> },
+    { icon: 'sessions', inhalt: <>Diese Woche: {sessions} von {trainer.kontingent} Sessions vergeben</> },
+    { icon: 'zitat', inhalt: trainer.philosophie },
+  ]
   return (
     <div className="modal-hintergrund" onClick={onClose} role="presentation">
       <div className="modal karte" role="dialog" aria-modal="true" aria-label={'Profil von ' + trainer.name} onClick={(e) => e.stopPropagation()}>
@@ -1144,51 +1398,42 @@ function TrainerModal({ trainer, buchungen, onClose }) {
         <button className="modal-schliessen" onClick={onClose} aria-label="Profil schließen">
           ✕
         </button>
-        <div className="modal-kopf">
-          <span className="monogramm monogramm-gross" aria-hidden="true">
-            {trainer.monogramm}
-          </span>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 24 }}>{trainer.name.toLowerCase()}.</h2>
-            <span className="hinweis-klein">
-              {trainer.herkunft} · {trainer.erfahrung} Jahre
+
+        <div className="passport-karte">
+          <div className="passport-links">
+            <span className="monogramm monogramm-gross" aria-hidden="true" style={{ margin: '0 auto' }}>
+              {trainer.monogramm}
             </span>
+            <div className="passport-name">{trainer.name.split(' ')[0].toLowerCase()}</div>
+            <div className="passport-rolle">
+              <Icon name="medaille" />
+              {trainer.herkunft}
+            </div>
+          </div>
+          <div className="passport-rechts">
+            <div className="passport-wert">
+              <div className="zahl">{trainer.erfahrung}</div>
+              <div className="label">Jahre Erfahrung</div>
+            </div>
+            <div className="passport-wert">
+              <div className="zahl">{auslastung}%</div>
+              <div className="label">Auslastung</div>
+            </div>
+            <div className="passport-wert">
+              <div className="zahl">{Math.max(0, trainer.kontingent - sessions)}</div>
+              <div className="label">Slots frei</div>
+            </div>
           </div>
         </div>
-        <p className="gedeckt" style={{ fontSize: 15 }}>
-          {trainer.philosophie}
-        </p>
-        <span className="kicker" style={{ marginTop: 20 }}>
-          Schwerpunkte
-        </span>
-        <div className="chip-liste">
-          {trainer.schwerpunkte.map((s) => (
-            <span key={s} className="chip chip-still">
-              {s}
-            </span>
-          ))}
-        </div>
-        <span className="kicker" style={{ marginTop: 20 }}>
-          Zertifikate
-        </span>
-        <div className="chip-liste">
-          {trainer.zertifikate.map((z) => (
-            <span key={z} className="chip chip-still">
-              {z}
-            </span>
-          ))}
-        </div>
-        <span className="kicker" style={{ marginTop: 20 }}>
-          Trainingsarten
-        </span>
-        <div className="chip-liste">
-          {arten.map((a) => (
-            <span key={a.id} className="chip chip-still">
-              {a.name} · {euro(a.preis)}
-            </span>
-          ))}
-        </div>
-        <div style={{ marginTop: 22 }}>
+
+        {zeilen.map((z, i) => (
+          <div className="passport-zeile" key={i}>
+            <Icon name={z.icon} />
+            <span className="passport-text">{z.inhalt}</span>
+          </div>
+        ))}
+
+        <div style={{ marginTop: 18 }}>
           <Auslastungsbalken wert={sessions} maximum={trainer.kontingent} />
         </div>
       </div>
@@ -1283,6 +1528,28 @@ function KundenAnsicht(props) {
       return { stunde, ...p, trainerId: praeferenzTrainerId }
     })
   }, [art, artId, ohnePraeferenz, praeferenzTrainerId, selTag, buchungen, kundeId, trainerListe, woche])
+
+  /* Freie Zeiten je Wochentag, für die Punkte in der Tagesleiste */
+  const freiProTag = useMemo(() => {
+    if (!art) return woche.tage.map(() => 0)
+    if (!ohnePraeferenz && !praeferenzTrainerId) return woche.tage.map(() => 0)
+    return woche.tage.map((t) =>
+      STUNDEN.reduce((summe, stunde) => {
+        const r = ohnePraeferenz
+          ? bewerteSlotOhnePraeferenz({ ...engineKontext, artId, tag: t.index, stunde })
+          : pruefeSlot({
+              trainer: trainerById(praeferenzTrainerId),
+              tag: t.index,
+              stunde,
+              buchungen,
+              kundeId,
+              jetztTag: woche.jetztTag,
+              jetztStunde: woche.jetztStunde,
+            })
+        return summe + (r.status === 'frei' || r.status === 'knapp' ? 1 : 0)
+      }, 0),
+    )
+  }, [art, artId, ohnePraeferenz, praeferenzTrainerId, buchungen, kundeId, trainerListe, woche])
 
   const meineTermine = buchungen
     .filter((b) => b.kundeId === kundeId && b.status !== 'storniert')
@@ -1435,62 +1702,105 @@ function KundenAnsicht(props) {
           <div className="schritt-einblendung">
             <span className="kicker">{ohnePraeferenz ? art.name : art.name + ' · ' + wunschTrainer.name}</span>
             <h2>wann passt es dir.</h2>
-            <Wochenleiste
-              woche={woche}
-              aktiv={selTag}
-              markierteTage={markierteTage}
-              onWahl={(i) => {
-                setSelTag(i)
-                setAuswahl(null)
-                setOffenerGrund(null)
-              }}
-            />
-            <div className="slot-grid" role="listbox" aria-label="Zeitslots des Tages">
-              {slotBewertungen.map((s) => {
-                const buchbar = s.status === 'frei' || s.status === 'knapp'
-                const gewaehlt = auswahl && auswahl.tag === selTag && auswahl.stunde === s.stunde
-                const trainerName = s.trainerId ? trainerById(s.trainerId).name : null
-                let statusText = ''
-                if (s.status === 'frei') statusText = ohnePraeferenz && trainerName ? trainerName.split(' ')[0] : 'frei'
-                if (s.status === 'knapp') statusText = 'knapp'
-                if (s.status === 'gesperrt') {
-                  if (s.grund === 'vergangen') statusText = 'vorbei'
-                  else if (s.grund === 'arbeitszeit') statusText = 'nicht da'
-                  else if (s.grund === 'flaeche_voll') statusText = 'voll'
-                  else if (s.grund === 'geblockt') statusText = 'geblockt'
-                  else if (s.grund === 'eigene_buchung') statusText = 'dein Termin'
-                  else statusText = 'belegt'
-                }
+
+            <div className="tagesleiste" role="tablist" aria-label="Tag wählen">
+              {woche.tage.map((t) => {
+                const frei = freiProTag[t.index]
                 return (
                   <button
-                    key={s.stunde}
-                    className="slot-kachel"
-                    data-status={buchbar ? s.status : 'gesperrt'}
-                    data-voll={s.kunden >= MAX_KUNDEN_PRO_SLOT ? 'true' : 'false'}
-                    aria-pressed={!!gewaehlt}
-                    aria-label={`${stundeLabel(s.stunde)} Uhr, ${statusText}, ${s.kunden} von ${MAX_KUNDEN_PRO_SLOT} Plätzen belegt`}
+                    key={t.index}
+                    role="tab"
+                    className="tag"
+                    aria-selected={selTag === t.index}
+                    disabled={frei === 0}
+                    aria-label={`${t.label} ${t.datumLabel}, ${frei === 0 ? 'keine freie Zeit' : frei === 1 ? 'eine freie Zeit' : frei + ' freie Zeiten'}`}
                     onClick={() => {
-                      if (buchbar) {
-                        setAuswahl({ tag: selTag, stunde: s.stunde, trainerId: s.trainerId, duo: s.duo })
-                        setOffenerGrund(null)
-                      } else {
-                        setOffenerGrund(offenerGrund === s.stunde ? null : s.stunde)
-                      }
+                      setSelTag(t.index)
+                      setAuswahl(null)
+                      setOffenerGrund(null)
                     }}
-                    aria-expanded={!buchbar ? offenerGrund === s.stunde : undefined}
                   >
-                    <span className="zeit">{stundeLabel(s.stunde)}</span>
-                    <span className="slot-status">{statusText}</span>
-                    <span className="plaetze" aria-hidden="true">
-                      {[0, 1, 2, 3].map((i) => (
-                        <i key={i} className={i < s.kunden ? 'belegt' : ''} />
-                      ))}
-                    </span>
-                    {s.duo && buchbar && <span className="duo-tag">Duo</span>}
+                    <span className="kuerzel">{t.label}</span>
+                    <span className="zahl">{t.tagZahl}</span>
+                    <span className={'frei-punkt' + (frei === 0 ? ' ohne' : '')} />
                   </button>
                 )
               })}
             </div>
+            <p className="tages-zusammenfassung">
+              {freiProTag[selTag] === 0
+                ? 'An diesem Tag ist nichts mehr frei. Wähle einen anderen Tag.'
+                : `${freiProTag[selTag]} ${freiProTag[selTag] === 1 ? 'freie Zeit' : 'freie Zeiten'} am ${woche.tage[selTag].label}, ${woche.tage[selTag].datumLabel}`}
+            </p>
+
+            {TAGESZEITEN.map((tz) => {
+              /* Vergangene Zeiten blenden wir aus, sie helfen niemandem mehr.
+                 Belegte bleiben sichtbar, damit der Grund abrufbar bleibt. */
+              const slots = slotBewertungen.filter((s) => s.stunde >= tz.von && s.stunde < tz.bis && s.grund !== 'vergangen')
+              if (slots.length === 0) return null
+              const freieHier = slots.filter((s) => s.status === 'frei' || s.status === 'knapp').length
+              return (
+                <div className="zeitgruppe" key={tz.id}>
+                  <div className="zeitgruppe-kopf">
+                    <Icon name={tz.icon} />
+                    <span>{tz.name}</span>
+                    <span className="anzahl">{freieHier === 0 ? 'nichts frei' : `${freieHier} frei`}</span>
+                  </div>
+                  {slots.map((s) => {
+                    const buchbar = s.status === 'frei' || s.status === 'knapp'
+                    const gewaehlt = auswahl && auswahl.tag === selTag && auswahl.stunde === s.stunde
+                    const trainerName = s.trainerId ? trainerById(s.trainerId).name.split(' ')[0] : null
+                    let titel = ''
+                    let unter = ''
+                    if (buchbar) {
+                      titel = s.duo ? `Duo mit ${trainerName}` : ohnePraeferenz ? `Einzel bei ${trainerName}` : 'Einzeltraining'
+                      unter = s.kunden === 0 ? 'Fläche ist leer' : `${s.kunden} von ${MAX_KUNDEN_PRO_SLOT} Plätzen belegt`
+                    } else {
+                      if (s.grund === 'vergangen') titel = 'Vorbei'
+                      else if (s.grund === 'arbeitszeit') titel = ohnePraeferenz ? 'Kein Trainer da' : `${wunschTrainer.name.split(' ')[0]} arbeitet nicht`
+                      else if (s.grund === 'flaeche_voll') titel = 'Fläche voll'
+                      else if (s.grund === 'geblockt') titel = 'Geblockt'
+                      else if (s.grund === 'eigene_buchung') titel = 'Dein Termin'
+                      else if (s.grund === 'trainer_limit') titel = 'Zwei Trainer belegt'
+                      else if (s.grund === 'trainer_voll') titel = 'Trainer ausgelastet'
+                      else if (s.grund === 'kontingent') titel = 'Diese Woche ausgebucht'
+                      else titel = 'Nicht buchbar'
+                      unter = s.grund === 'vergangen' ? '' : 'Tippe für den Grund'
+                    }
+                    return (
+                      <button
+                        key={s.stunde}
+                        className="slot-zeile"
+                        data-status={buchbar ? s.status : 'gesperrt'}
+                        data-lage={s.duo ? 'duo' : 'einzel'}
+                        aria-pressed={!!gewaehlt}
+                        aria-label={`${stundeLabel(s.stunde)} Uhr, ${titel}, ${s.kunden} von ${MAX_KUNDEN_PRO_SLOT} Plätzen belegt`}
+                        onClick={() => {
+                          if (buchbar) {
+                            setAuswahl({ tag: selTag, stunde: s.stunde, trainerId: s.trainerId, duo: s.duo })
+                            setOffenerGrund(null)
+                          } else {
+                            setOffenerGrund(offenerGrund === s.stunde ? null : s.stunde)
+                          }
+                        }}
+                        aria-expanded={!buchbar ? offenerGrund === s.stunde : undefined}
+                      >
+                        <span className="zeit">{stundeLabel(s.stunde)}</span>
+                        <span className="lage">
+                          <strong>{titel}</strong>
+                          {unter}
+                        </span>
+                        <span className="punkte" aria-hidden="true">
+                          {[0, 1, 2, 3].map((i) => (
+                            <i key={i} className={i < s.kunden ? 'belegt' : ''} />
+                          ))}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )
+            })}
 
             {offenerGrund !== null &&
               (() => {
@@ -1516,36 +1826,20 @@ function KundenAnsicht(props) {
               })()}
 
             {auswahl && (
-              <div className="karte" style={{ marginTop: 14 }}>
-                <div className="karten-kopf">
-                  <span className="kicker">Deine Wahl</span>
-                  <span className="zeitstempel">
-                    {woche.tage[auswahl.tag].label} {stundeLabel(auswahl.stunde)}
-                  </span>
-                </div>
-                <div style={{ fontWeight: 600, fontSize: 17 }}>
-                  {art.name} bei {trainerById(auswahl.trainerId).name}
-                </div>
-                <div className="mono hinweis-klein" style={{ marginTop: 4 }}>
-                  {belegungAuswahl} von {MAX_KUNDEN_PRO_SLOT} Plätzen belegt
-                </div>
-                {auswahl.duo && (
-                  <p className="hinweis-klein" style={{ marginTop: 8, marginBottom: 0 }}>
-                    {trainerById(auswahl.trainerId).name.split(' ')[0]} betreut zu dieser Zeit bereits einen weiteren Kunden. Ihr trainiert im Duo.
-                  </p>
-                )}
-                <FlaechenBelegung
+              <>
+                <FlaechenKarte
                   buchungen={buchungen}
                   trainerListe={trainerListe}
                   tag={auswahl.tag}
                   stunde={auswahl.stunde}
                   eigenerTrainerId={auswahl.trainerId}
+                  kundeKuerzel={kunde.name.split(' ').map((n) => n[0]).join('')}
                   onProfil={setModalTrainerId}
                 />
-                <button className="knopf-primaer" style={{ width: '100%', marginTop: 18 }} onClick={() => setFlow('checkout')}>
-                  Weiter
+                <button className="knopf-primaer" style={{ width: '100%', marginTop: 14 }} onClick={() => setFlow('checkout')}>
+                  {woche.tage[auswahl.tag].label} {stundeLabel(auswahl.stunde)} · Weiter
                 </button>
-              </div>
+              </>
             )}
           </div>
         )}
@@ -1571,11 +1865,15 @@ function KundenAnsicht(props) {
                 </div>
               ))}
             </div>
-            {auswahl.duo && (
-              <p className="hinweis-klein" style={{ marginTop: 14 }}>
-                Dein Trainer betreut zu dieser Zeit einen weiteren Kunden. Ihr trainiert im Duo.
-              </p>
-            )}
+            <FlaechenKarte
+              buchungen={buchungen}
+              trainerListe={trainerListe}
+              tag={auswahl.tag}
+              stunde={auswahl.stunde}
+              eigenerTrainerId={auswahl.trainerId}
+              kundeKuerzel={kunde.name.split(' ').map((n) => n[0]).join('')}
+              onProfil={setModalTrainerId}
+            />
             <p className="hinweis-klein" style={{ marginTop: 14 }}>
               Dein Termin ist mit der Buchung fest eingetragen. Stornieren kannst du bis {STORNO_FRIST_STUNDEN} Stunden vorher.
             </p>
