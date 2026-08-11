@@ -1,6 +1,8 @@
 # Design-Handoff — BetterDayz Booking
 
-Entwickler-Handoff für die Buchungsplattform eines geschlossenen Personal-Training-Studios (fünf feste Trainer, kleine Fläche, Zugang nur per Code). Quelle ist der lauffähige React-Prototyp `studio-buchung/src/App.jsx` (Arbeitstitel im Prototyp „Gusswerk", Produktname BetterDayz — die Wortmarke ist beim Umsetzen zu tauschen, sonst ändert sich nichts).
+Entwickler-Handoff für die Buchungsplattform eines geschlossenen Personal-Training-Studios (fünf feste Trainer, kleine Fläche, Zugang nur per Code). Quelle ist der lauffähige React-Prototyp `src/App.jsx`.
+
+> **Stand v2 — helles Design nach der MotionSite-Referenz.** Verbindlich für Farben, Typografie und Effekte ist `tokens.css` in diesem Ordner. Kernpunkte: helle Fläche `#F0F5F7`, Petrol `#154359` als Tinte und CTA-Füllung, Cyan-Verlauf `#185B7B → #4BBDF0` für Werte und Balken, TT Firs Neue mit Inter-Fallback, Versal-Headlines mit enger Laufweite, Schrägschnitt-Kanten (Chamfer-Clip-Paths) auf CTAs und Stat-Karten. Die Struktur der Dokumente 01 bis 05 (Komponentenaufbau, Screens, Zustände, Regeln, Responsive, A11y) gilt unverändert, dort genannte dunkle Farbwerte und die Serif-Kursiv-Typografie sind durch die Token aus `tokens.css` ersetzt.
 
 ## Dateien
 
