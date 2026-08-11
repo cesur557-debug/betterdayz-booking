@@ -907,18 +907,20 @@ select { font-family: var(--grotesk); }
 }
 .exklusiv-schalter .ex-icon svg { width: 17px; height: 17px; }
 .exklusiv-schalter .ex-txt { flex: 1; min-width: 0; line-height: 1.35; }
-.exklusiv-schalter .ex-txt strong { display: block; font-size: 14px; font-weight: 600; }
-.exklusiv-schalter .ex-txt span { font-size: 12px; color: var(--gedeckt); }
-.exklusiv-schalter .ex-preis { font-size: 14px; font-weight: 600; flex: none; }
+.exklusiv-schalter .ex-kopf { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.exklusiv-schalter .ex-txt strong { font-size: 14px; font-weight: 600; }
+.exklusiv-schalter .ex-unter { display: block; font-size: 12px; color: var(--gedeckt); }
+.exklusiv-schalter .ex-preis { font-size: 14px; font-weight: 600; flex: none; color: var(--tinte); }
 .exklusiv-schalter .ex-box {
   width: 24px; height: 24px; border-radius: 8px; flex: none;
   display: flex; align-items: center; justify-content: center;
   background: var(--flaeche); box-shadow: inset 0 0 0 1.5px var(--flaeche-still);
   font-size: 13px; font-weight: 700;
 }
+.exklusiv-schalter.aus { opacity: 0.55; cursor: default; }
 .exklusiv-schalter.an { background: var(--tinte); }
 .exklusiv-schalter.an .ex-txt strong, .exklusiv-schalter.an .ex-preis { color: var(--flaeche); }
-.exklusiv-schalter.an .ex-txt span { color: rgba(255, 255, 255, 0.66); }
+.exklusiv-schalter.an .ex-unter { color: rgba(255, 255, 255, 0.66); }
 .exklusiv-schalter.an .ex-icon { background: rgba(255, 255, 255, 0.16); color: var(--flaeche); }
 .exklusiv-schalter.an .ex-box { background: var(--flaeche); color: var(--tinte); box-shadow: none; }
 .exklusiv-plakette {
@@ -1707,7 +1709,44 @@ function FlaechenKarte({ buchungen, trainerListe, tag, stunde, eigenerTrainerId,
         ))}
       </div>
 
-      <span className="kicker">Trainer auf der Fläche</span>
+      {/* Der Schalter steht direkt unter den Plätzen, damit sofort klar ist,
+          worauf er sich bezieht. Ist der Slot nicht mehr leer, bleibt er
+          sichtbar und erklärt, warum es nicht mehr geht. */}
+      {onExklusiv &&
+        EXKLUSIV_MOEGLICH &&
+        (f.exklusivMoeglich ? (
+          <button className={'exklusiv-schalter' + (exklusiv ? ' an' : '')} onClick={() => onExklusiv(!exklusiv)} aria-pressed={exklusiv}>
+            <span className="ex-icon" aria-hidden="true">
+              <Icon name="schloss" />
+            </span>
+            <span className="ex-txt">
+              <span className="ex-kopf">
+                <strong>Fläche nur für dich</strong>
+                <span className="ex-preis mono">+{EXKLUSIV_AUFPREIS} €</span>
+              </span>
+              <span className="ex-unter">Niemand kann dazubuchen.</span>
+            </span>
+            <span className="ex-box" aria-hidden="true">
+              {exklusiv ? '✓' : ''}
+            </span>
+          </button>
+        ) : (
+          <div className="exklusiv-schalter aus">
+            <span className="ex-icon" aria-hidden="true">
+              <Icon name="schloss" />
+            </span>
+            <span className="ex-txt">
+              <span className="ex-kopf">
+                <strong>Fläche nur für dich</strong>
+              </span>
+              <span className="ex-unter">Geht nur, solange niemand sonst gebucht hat.</span>
+            </span>
+          </div>
+        ))}
+
+      <span className="kicker" style={{ marginTop: 20 }}>
+        Trainer auf der Fläche
+      </span>
       {meinTrainer && (
         <button className="flaeche-trainerzeile" onClick={() => onProfil(meinTrainer.id)} aria-haspopup="dialog" style={{ background: 'transparent', width: '100%', padding: '10px 0', minHeight: 0, borderRadius: 0 }}>
           <span className="monogramm monogramm-mini" aria-hidden="true">
@@ -1755,22 +1794,6 @@ function FlaechenKarte({ buchungen, trainerListe, tag, stunde, eigenerTrainerId,
         </p>
       )}
 
-      {/* Exklusiv steht nur zur Wahl, solange der Slot leer ist */}
-      {onExklusiv && f.exklusivMoeglich && (
-        <button className={'exklusiv-schalter' + (exklusiv ? ' an' : '')} onClick={() => onExklusiv(!exklusiv)} aria-pressed={exklusiv}>
-          <span className="ex-icon" aria-hidden="true">
-            <Icon name="schloss" />
-          </span>
-          <span className="ex-txt">
-            <strong>Fläche nur für dich</strong>
-            <span>Die drei anderen Plätze bleiben leer, niemand kann dazubuchen.</span>
-          </span>
-          <span className="ex-preis mono">+{EXKLUSIV_AUFPREIS} €</span>
-          <span className="ex-box" aria-hidden="true">
-            {exklusiv ? '✓' : ''}
-          </span>
-        </button>
-      )}
     </div>
   )
 }
@@ -2184,7 +2207,7 @@ function KundenAnsicht(props) {
                       unter = s.duo
                         ? 'ein weiterer Kunde ist dabei'
                         : s.kunden === 0
-                          ? 'Fläche ist leer'
+                          ? 'Fläche leer · exklusiv möglich'
                           : `${s.kunden} von ${MAX_KUNDEN_PRO_SLOT} Plätzen belegt`
                     } else {
                       if (s.grund === 'vergangen') titel = 'Vorbei'
