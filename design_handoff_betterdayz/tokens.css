@@ -1,0 +1,66 @@
+/* BetterDayz Booking — Design-Tokens
+   Quelle: Prototyp studio-buchung/src/App.jsx, Stand August 2026 */
+
+:root {
+  /* Flächen */
+  --graphit: #141619;
+  --flaeche: #1d2126;
+  --flaeche-hell: #262b31;
+
+  /* Text */
+  --kreide: #ede9e0;
+  --gedeckt: #a6a49c;
+  --cta-text: #1c1508;
+
+  /* Akzent Messing */
+  --akzent: #c99e63;
+  --akzent-hell: #dcb277;
+  --akzent-tief: #8f6f41;
+  --akzent-dunkel: #322a1e;
+
+  /* Status */
+  --frei: #6fbf8f;
+  --frei-dunkel: rgba(111, 191, 143, 0.1);
+  --warnung: #c98a5e;
+  --warnung-dunkel: rgba(201, 138, 94, 0.12);
+  --voll: #b3595a;
+
+  /* Verläufe */
+  --verlauf-cta: linear-gradient(180deg, var(--akzent-hell), var(--akzent));
+  --verlauf-wert: linear-gradient(294deg, var(--akzent-tief) 20%, var(--akzent-hell));
+  --verlauf-karte: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0));
+  --verlauf-eigene: linear-gradient(180deg, rgba(201, 158, 99, 0.32), rgba(201, 158, 99, 0.16));
+  --glow-seite: radial-gradient(1100px 500px at 50% -10%, rgba(201, 158, 99, 0.07), transparent 70%);
+
+  /* Schrift */
+  --serif: 'Fraunces', 'Iowan Old Style', 'Palatino', Georgia, serif;
+  --grotesk: 'Inter', 'Helvetica Neue', Helvetica, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, monospace;
+
+  /* Radien */
+  --radius-s: 12px;
+  --radius-m: 16px;
+  --radius-l: 18px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+  --radius-zelle: 10px;
+
+  /* Schatten */
+  --schatten-karte: 0 18px 44px rgba(0, 0, 0, 0.4);
+  --schatten-kachel: 0 10px 26px rgba(0, 0, 0, 0.32);
+  --schatten-kpi: 0 12px 30px rgba(0, 0, 0, 0.3);
+  --schatten-cta: 0 4px 14px rgba(201, 158, 99, 0.25);
+  --schatten-aktiv: 0 14px 34px rgba(201, 158, 99, 0.35);
+  --schatten-topbar: 0 12px 30px rgba(0, 0, 0, 0.35);
+
+  /* Raster-Töne (Wochenraster und Block-Grid) */
+  --zelle-grund: rgba(255, 255, 255, 0.045);
+  --zelle-ausserhalb: rgba(255, 255, 255, 0.012);
+  --zelle-fremd: #434a54;
+  --zelle-heute: rgba(201, 158, 99, 0.05);
+  --schraffur-block: repeating-linear-gradient(45deg, transparent 0 5px, rgba(237, 233, 224, 0.09) 5px 10px);
+
+  /* Über-Sektion */
+  --stat-rand: rgba(237, 233, 224, 0.22);
+  --chamfer-knopf: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
