@@ -57,10 +57,39 @@ const STUNDEN = Array.from({ length: TAG_ENDE - TAG_START }, (_, i) => TAG_START
 ---------------------------------------------------------------------------- */
 
 const TRAININGSARTEN = [
-  { id: 'boxing', name: 'Boxing', dauer: 60, preis: 95, beschreibung: 'Technik, Pratzenarbeit, Kondition' },
-  { id: 'hit', name: 'HIT Training', dauer: 45, preis: 78, beschreibung: 'Hochintensive Intervalle, kurze Pausen' },
-  { id: 'pump-ok', name: 'Pumping Oberkörper', dauer: 60, preis: 85, beschreibung: 'Brust, Rücken, Schulter, Arme' },
-  { id: 'pump-uk', name: 'Pumping Unterkörper', dauer: 60, preis: 88, beschreibung: 'Beine, Gesäß, Rumpfstabilität' },
+  /* Bilder von Unsplash, frei nutzbar, per URL eingebunden */
+  {
+    id: 'boxing',
+    name: 'Boxing',
+    dauer: 60,
+    preis: 95,
+    beschreibung: 'Technik, Pratzenarbeit, Kondition',
+    bild: 'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?auto=format&fit=crop&w=600&q=70',
+  },
+  {
+    id: 'hit',
+    name: 'HIT Training',
+    dauer: 45,
+    preis: 78,
+    beschreibung: 'Hochintensive Intervalle, kurze Pausen',
+    bild: 'https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=600&q=70',
+  },
+  {
+    id: 'pump-ok',
+    name: 'Pumping Oberkörper',
+    dauer: 60,
+    preis: 85,
+    beschreibung: 'Brust, Rücken, Schulter, Arme',
+    bild: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?auto=format&fit=crop&w=600&q=70',
+  },
+  {
+    id: 'pump-uk',
+    name: 'Pumping Unterkörper',
+    dauer: 60,
+    preis: 88,
+    beschreibung: 'Beine, Gesäß, Rumpfstabilität',
+    bild: 'https://images.unsplash.com/photo-1574680096145-d05b474e2155?auto=format&fit=crop&w=600&q=70',
+  },
 ]
 
 /* Arbeitszeiten je Wochentag Mo bis Sa. null bedeutet freier Tag. */
@@ -492,14 +521,15 @@ function flaechenAussage(f, trainerName) {
   return `allein mit ${vorname}.`
 }
 
-function flaechenNebentext(f) {
+function flaechenNebentext(f, trainerName) {
+  const vorname = trainerName ? trainerName.split(' ')[0] : 'deinem Trainer'
   const andere = f.andereAufFlaeche
   if (f.duo) {
-    const rest = andere > 0 ? ` Dazu ${andere === 1 ? 'trainiert eine weitere Person' : `trainieren ${andere} weitere Personen`} bei anderen Trainern.` : ''
-    return 'Ihr zwei teilt euch die Aufmerksamkeit.' + rest
+    const rest = andere > 0 ? ` Dazu ${andere === 1 ? 'trainiert ein weiterer Kunde' : `trainieren ${andere} weitere Kunden`} bei anderen Trainern.` : ''
+    return `Ein weiterer Kunde hat ebenfalls bei ${vorname} gebucht, ihr zwei teilt euch die Session.` + rest
   }
-  if (andere === 0) return 'Niemand sonst ist zu dieser Zeit gebucht. Volle Ruhe auf der Fläche.'
-  return `${andere === 1 ? 'Eine weitere Person trainiert' : `${andere} weitere Personen trainieren`} gleichzeitig bei anderen Trainern.`
+  if (andere === 0) return 'Kein anderer Kunde ist zu dieser Zeit gebucht. Volle Ruhe auf der Fläche.'
+  return `${vorname} betreut nur dich. ${andere === 1 ? 'Ein weiterer Kunde trainiert' : `${andere} weitere Kunden trainieren`} gleichzeitig bei anderen Trainern.`
 }
 
 function tageszeitGruss(jetzt) {
@@ -812,11 +842,75 @@ select { font-family: var(--grotesk); }
 .platz-du .wer { color: rgba(255, 255, 255, 0.72); }
 .platz-mit .kopf { background: var(--daten); color: #22303C; }
 .platz-mit .wer { color: var(--gedeckt); }
+.platz .kopf svg { width: 15px; height: 15px; }
 .flaeche-trainerzeile { display: flex; align-items: center; gap: 10px; padding: 10px 0; }
 .flaeche-trainerzeile + .flaeche-trainerzeile { border-top: 1px solid var(--flaeche-still); }
 .flaeche-trainerzeile .txt { flex: 1; min-width: 0; }
 .flaeche-trainerzeile .txt strong { display: block; font-size: 14px; font-weight: 600; }
 .flaeche-trainerzeile .txt span { font-size: 12px; color: var(--gedeckt); }
+
+/* Trainingsarten als Bildkacheln */
+.arten-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.arten-kachel {
+  display: flex; flex-direction: column; align-items: stretch;
+  padding: 0; overflow: hidden; text-align: left;
+  border-radius: var(--radius-l); background: var(--flaeche); box-shadow: var(--schatten);
+}
+.arten-kachel img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--flaeche-still); }
+.arten-kachel .arten-info { padding: 11px 14px 13px; }
+.arten-kachel .arten-info strong { display: block; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }
+.arten-kachel .arten-info span { font-size: 12px; color: var(--gedeckt); }
+.arten-kachel:active { transform: scale(0.97); }
+
+/* Ausgebuchte Trainer bleiben sichtbar, treten aber zurück */
+.trainer-ausgebucht { opacity: 0.6; }
+.chip-voll { background: var(--voll-flaeche); color: var(--voll); font-weight: 600; font-size: 12px; }
+
+/* Studio-Galerie als Blog */
+.blog-galerie { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+.blog-kachel { margin: 0; border-radius: var(--radius-l); overflow: hidden; background: var(--flaeche); box-shadow: var(--schatten); }
+.blog-gross { grid-column: 1 / -1; }
+.blog-kachel img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; background: var(--flaeche-still); }
+.blog-gross img { aspect-ratio: 16 / 10; }
+.blog-kachel figcaption { padding: 10px 14px 12px; }
+.blog-kachel figcaption strong { display: block; font-size: 13px; font-weight: 600; }
+.blog-kachel figcaption span { font-size: 12px; color: var(--gedeckt); line-height: 1.4; }
+
+/* Buchungsbestätigung mit animiertem Haken */
+.erfolg-hintergrund {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(15, 17, 19, 0.34);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  animation: einblenden 0.18s ease;
+}
+.erfolg-karte {
+  width: 100%; max-width: 320px;
+  background: var(--flaeche); border-radius: 28px;
+  padding: 36px 26px 28px; text-align: center;
+  animation: modalauf 0.24s ease;
+}
+.haken { width: 86px; height: 86px; display: block; margin: 0 auto; }
+.haken-kreis {
+  fill: var(--frei-flaeche); stroke: var(--frei); stroke-width: 3;
+  stroke-dasharray: 195; stroke-dashoffset: 195;
+  transform: rotate(-90deg); transform-origin: center;
+  animation: kreisZug 0.5s ease-out forwards;
+}
+.haken-zug {
+  fill: none; stroke: var(--frei); stroke-width: 5;
+  stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 48; stroke-dashoffset: 48;
+  animation: hakenZug 0.35s ease-out 0.45s forwards;
+}
+@keyframes kreisZug { to { stroke-dashoffset: 0; } }
+@keyframes hakenZug { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .haken-kreis, .haken-zug { animation: none; stroke-dashoffset: 0; }
+}
+.erfolg-details { margin: 6px 0 20px; }
+.erfolg-details .zeile { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; font-size: 14px; }
+.erfolg-details .zeile + .zeile { border-top: 1px solid var(--flaeche-still); }
 
 /* Host-Passport für Trainerprofile (Airbnb-Muster) */
 .passport-karte {
@@ -893,10 +987,12 @@ select { font-family: var(--grotesk); }
 .trainer-zeile .mitte { flex: 1; min-width: 0; }
 .trainer-zeile .pfeil { color: var(--leise); font-size: 18px; }
 
-/* Balken */
-.balken { height: 4px; background: var(--flaeche-still); border-radius: 2px; overflow: hidden; }
-.balken > div { height: 100%; background: var(--daten); }
-.balken-voll > div { background: var(--warnung); }
+/* Balken — Ampellogik für die Auslastung */
+.balken { height: 6px; background: var(--flaeche-still); border-radius: 3px; overflow: hidden; }
+.balken > div { height: 100%; background: var(--daten); border-radius: 3px; }
+.balken-gruen > div { background: var(--frei); }
+.balken-mittel > div { background: var(--warnung); }
+.balken-voll > div { background: var(--voll); }
 
 /* Termine */
 .termin-zeile { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-radius: var(--radius-l); padding: 18px 20px; flex-wrap: wrap; background: var(--flaeche); box-shadow: var(--schatten); margin-bottom: 10px; }
@@ -1261,17 +1357,20 @@ function Icon({ name }) {
   return null
 }
 
+/* Auslastung mit Ampelfarbe. Grün heißt viel frei, Amber wird eng,
+   Rot ist voll — die Farbe sagt es schneller als jede Zahl. */
 function Auslastungsbalken({ wert, maximum }) {
   const anteil = maximum > 0 ? Math.min(1, wert / maximum) : 0
+  const stufe = anteil >= 1 ? 'voll' : anteil >= 0.6 ? 'mittel' : 'gruen'
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
         <span className="hinweis-klein">Auslastung diese Woche</span>
         <span className="mono hinweis-klein">
-          {wert} von {maximum}
+          {wert}/{maximum} · {Math.round(anteil * 100)}%
         </span>
       </div>
-      <div className={'balken' + (anteil >= 1 ? ' balken-voll' : '')} role="img" aria-label={`Auslastung ${wert} von ${maximum} Sessions`}>
+      <div className={'balken balken-' + stufe} role="img" aria-label={`Auslastung ${wert} von ${maximum} Sessions, ${Math.round(anteil * 100)} Prozent`}>
         <div style={{ width: anteil * 100 + '%' }} />
       </div>
     </div>
@@ -1298,6 +1397,32 @@ function Wochenleiste({ woche, aktiv, onWahl, markierteTage }) {
   )
 }
 
+/* Studiofotos als Blog-Galerie. Fehlende Dateien blenden ihre Kachel aus,
+   sobald ein Foto in public/studio/ liegt, erscheint es automatisch. */
+const STUDIO_BILDER = [
+  { datei: 'flaeche.jpg', titel: 'Die Fläche', text: 'Kunstrasen, Tageslicht und Platz für höchstens vier Kunden gleichzeitig.' },
+  { datei: 'boxing.jpg', titel: 'Boxing-Ecke', text: 'Am schweren Sack arbeiten wir an Technik, Timing und Schlagkraft.' },
+  { datei: 'airbike.jpg', titel: 'Airbike', text: 'Das ehrlichste Konditionsgerät im Haus, jede Sekunde zählt.' },
+  { datei: 'rack.jpg', titel: 'Functional Rack', text: 'Züge, Klimmzüge und Kabelarbeit für sauberen Kraftaufbau.' },
+  { datei: 'athletik.jpg', titel: 'Athletikfläche', text: 'Medizinbälle, Balance und Stabilität für dein Fundament.' },
+  { datei: 'equipment.jpg', titel: 'Kleingeräte', text: 'Bulgarian Bags, Balance Boards und alles für deine Beweglichkeit.' },
+  { datei: 'kraftbereich.png', titel: 'Kraftbereich', text: 'Langhanteln, Racks und Platz zum schweren Heben.' },
+]
+
+function BlogBild({ datei, titel, text, gross }) {
+  const [fehlt, setFehlt] = useState(false)
+  if (fehlt) return null
+  return (
+    <figure className={'blog-kachel' + (gross ? ' blog-gross' : '')}>
+      <img src={'/studio/' + datei} alt={titel} loading="lazy" onError={() => setFehlt(true)} />
+      <figcaption>
+        <strong>{titel}</strong>
+        <span>{text}</span>
+      </figcaption>
+    </figure>
+  )
+}
+
 /* Flächenkarte — das Kernstück beim Buchen.
    Beantwortet in einem Blick: trainiere ich allein mit meinem Trainer oder
    zu zweit, wer steht sonst auf der Fläche und wie viel Platz bleibt.
@@ -1317,15 +1442,15 @@ function FlaechenKarte({ buchungen, trainerListe, tag, stunde, eigenerTrainerId,
     <div className="flaeche-karte">
       <span className="kicker">Deine Fläche um {stundeLabel(stunde)}</span>
       <h3 className="flaeche-aussage">{flaechenAussage(f, meinTrainer && meinTrainer.name)}</h3>
-      <p className="flaeche-neben">{flaechenNebentext(f)}</p>
+      <p className="flaeche-neben">{flaechenNebentext(f, meinTrainer && meinTrainer.name)}</p>
 
       <div className="plaetze-reihe" role="img" aria-label={`${f.belegt + 1} von ${MAX_KUNDEN_PRO_SLOT} Plätzen belegt, ${f.frei - 1} bleiben frei`}>
         {plaetze.slice(0, MAX_KUNDEN_PRO_SLOT).map((p, i) => (
           <div key={i} className={'platz platz-' + p.art}>
             <span className="kopf" aria-hidden="true">
-              {p.art === 'du' ? kundeKuerzel : p.art === 'mit' ? p.trainer.monogramm : '·'}
+              {p.art === 'du' ? kundeKuerzel : p.art === 'mit' ? <Icon name="trainer" /> : '·'}
             </span>
-            <span className="wer">{p.art === 'du' ? 'du' : p.art === 'mit' ? p.trainer.name.split(' ')[0] : 'frei'}</span>
+            <span className="wer">{p.art === 'du' ? 'du' : p.art === 'mit' ? 'bei ' + p.trainer.name.split(' ')[0] : 'frei'}</span>
           </div>
         ))}
       </div>
@@ -1338,7 +1463,7 @@ function FlaechenKarte({ buchungen, trainerListe, tag, stunde, eigenerTrainerId,
           </span>
           <span className="txt" style={{ textAlign: 'left' }}>
             <strong>{meinTrainer.name}</strong>
-            <span>{f.duo ? 'betreut dich und eine weitere Person' : 'betreut nur dich'}</span>
+            <span>{f.duo ? 'betreut dich und einen weiteren Kunden' : 'betreut nur dich'}</span>
           </span>
           <span className="pfeil" style={{ color: 'var(--leise)' }}>
             ›
@@ -1360,7 +1485,7 @@ function FlaechenKarte({ buchungen, trainerListe, tag, stunde, eigenerTrainerId,
             </span>
             <span className="txt" style={{ textAlign: 'left' }}>
               <strong>{trainer.name}</strong>
-              <span>{kunden === 1 ? 'betreut eine Person' : `betreut ${kunden} Personen`}</span>
+              <span>{kunden === 1 ? 'betreut einen Kunden' : `betreut ${kunden} Kunden`}</span>
             </span>
             <span className="pfeil" style={{ color: 'var(--leise)' }}>
               ›
@@ -1370,6 +1495,11 @@ function FlaechenKarte({ buchungen, trainerListe, tag, stunde, eigenerTrainerId,
       {f.proTrainer.filter((x) => x.trainer.id !== eigenerTrainerId).length === 0 && !meinTrainer && (
         <p className="hinweis-klein" style={{ margin: 0 }}>
           Noch niemand gebucht.
+        </p>
+      )}
+      {f.belegt > 0 && (
+        <p className="hinweis-klein" style={{ margin: '12px 0 0' }}>
+          Andere Kunden siehst du anonym, ihre Namen bleiben privat.
         </p>
       )}
     </div>
@@ -1457,6 +1587,7 @@ function KundenAnsicht(props) {
   const [auswahl, setAuswahl] = useState(null)
   const [offenerGrund, setOffenerGrund] = useState(null)
   const [modalTrainerId, setModalTrainerId] = useState(null)
+  const [erfolg, setErfolg] = useState(null) // Daten der eben bestätigten Buchung
 
   const kunde = kunden.find((k) => k.id === kundeId) || null
   const art = TRAININGSARTEN.find((a) => a.id === artId) || null
@@ -1508,9 +1639,9 @@ function KundenAnsicht(props) {
 
   const buchen = () => {
     aktionen.buche({ kundeId, trainerId: auswahl.trainerId, artId, tag: auswahl.tag, stunde: auswahl.stunde, preis: art.preis })
+    setErfolg({ tag: auswahl.tag, stunde: auswahl.stunde, trainerId: auswahl.trainerId, artId })
     setAuswahl(null)
     setFlow(null)
-    setTab('termine')
   }
 
   const engineKontext = { trainerListe, buchungen, kundeId, jetztTag: woche.jetztTag, jetztStunde: woche.jetztStunde }
@@ -1634,18 +1765,19 @@ function KundenAnsicht(props) {
             <p className="gedeckt" style={{ marginBottom: 18 }}>
               Dauer und Preis unterscheiden sich je nach Art.
             </p>
-            {TRAININGSARTEN.map((a) => (
-              <button key={a.id} className="trainer-zeile" onClick={() => waehleArt(a.id)}>
-                <div className="mitte">
-                  <div style={{ fontWeight: 600, fontSize: 16 }}>{a.name}</div>
-                  <div className="hinweis-klein">{a.beschreibung}</div>
-                  <div className="mono hinweis-klein" style={{ marginTop: 2 }}>
-                    {a.dauer} Min · {euro(a.preis)}
-                  </div>
-                </div>
-                <span className="pfeil">›</span>
-              </button>
-            ))}
+            <div className="arten-grid">
+              {TRAININGSARTEN.map((a) => (
+                <button key={a.id} className="arten-kachel" onClick={() => waehleArt(a.id)} aria-label={`${a.name}, ${a.dauer} Minuten, ${euro(a.preis)}`}>
+                  <img src={a.bild} alt="" loading="lazy" />
+                  <span className="arten-info">
+                    <strong>{a.name}</strong>
+                    <span className="mono">
+                      {a.dauer} Min · {euro(a.preis)}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1656,33 +1788,46 @@ function KundenAnsicht(props) {
             <p className="gedeckt" style={{ marginBottom: 18 }}>
               Diese Trainer bieten {art.name} an und haben diese Woche noch Kapazität.
             </p>
-            {buchbareTrainer({ trainerListe, artId: art.id, buchungen }).map((t) => (
-              <div className="karte trainer-karte" key={t.id}>
-                <div className="trainer-kopf">
-                  <span className="monogramm" aria-hidden="true">
-                    {t.monogramm}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 16 }}>{t.name}</div>
-                    <div className="hinweis-klein">
-                      {t.herkunft} · {t.erfahrung} Jahre
+            {trainerListe
+              .filter((t) => t.arten.includes(art.id))
+              .map((t) => {
+                const sessions = wochenSessions(buchungen, t.id)
+                const voll = KONTINGENT_IST_OBERGRENZE && sessions >= t.kontingent
+                return (
+                  <div className={'karte trainer-karte' + (voll ? ' trainer-ausgebucht' : '')} key={t.id}>
+                    <div className="trainer-kopf">
+                      <span className="monogramm" aria-hidden="true">
+                        {t.monogramm}
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 600, fontSize: 16 }}>{t.name}</div>
+                        <div className="hinweis-klein">
+                          {t.herkunft} · {t.erfahrung} Jahre
+                        </div>
+                      </div>
+                      {voll && <span className="chip chip-voll">Ausgebucht</span>}
+                    </div>
+                    <p className="gedeckt" style={{ margin: 0, fontSize: 14 }}>
+                      {t.philosophie}
+                    </p>
+                    <Auslastungsbalken wert={sessions} maximum={t.kontingent} />
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      {voll ? (
+                        <button disabled style={{ flex: 1 }}>
+                          Diese Woche ausgebucht
+                        </button>
+                      ) : (
+                        <button className="knopf-primaer" style={{ flex: 1 }} onClick={() => waehleTrainer(t.id)}>
+                          Zeiten ansehen
+                        </button>
+                      )}
+                      <button style={{ background: 'var(--grund)' }} onClick={() => setModalTrainerId(t.id)} aria-haspopup="dialog">
+                        Profil
+                      </button>
                     </div>
                   </div>
-                </div>
-                <p className="gedeckt" style={{ margin: 0, fontSize: 14 }}>
-                  {t.philosophie}
-                </p>
-                <Auslastungsbalken wert={wochenSessions(buchungen, t.id)} maximum={t.kontingent} />
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button className="knopf-primaer" style={{ flex: 1 }} onClick={() => waehleTrainer(t.id)}>
-                    Zeiten ansehen
-                  </button>
-                  <button style={{ background: 'var(--grund)' }} onClick={() => setModalTrainerId(t.id)} aria-haspopup="dialog">
-                    Profil
-                  </button>
-                </div>
-              </div>
-            ))}
+                )
+              })}
             {buchbareTrainer({ trainerListe, artId: art.id, buchungen }).length === 0 ? (
               <div className="leer">
                 <p>Für {art.name} ist diese Woche kein Trainer mehr frei.</p>
@@ -1753,8 +1898,12 @@ function KundenAnsicht(props) {
                     let titel = ''
                     let unter = ''
                     if (buchbar) {
-                      titel = s.duo ? `Duo mit ${trainerName}` : ohnePraeferenz ? `Einzel bei ${trainerName}` : 'Einzeltraining'
-                      unter = s.kunden === 0 ? 'Fläche ist leer' : `${s.kunden} von ${MAX_KUNDEN_PRO_SLOT} Plätzen belegt`
+                      titel = s.duo ? `Zu zweit bei ${trainerName}` : ohnePraeferenz ? `Einzel bei ${trainerName}` : 'Einzeltraining'
+                      unter = s.duo
+                        ? 'ein weiterer Kunde ist dabei'
+                        : s.kunden === 0
+                          ? 'Fläche ist leer'
+                          : `${s.kunden} von ${MAX_KUNDEN_PRO_SLOT} Plätzen belegt`
                     } else {
                       if (s.grund === 'vergangen') titel = 'Vorbei'
                       else if (s.grund === 'arbeitszeit') titel = ohnePraeferenz ? 'Kein Trainer da' : `${wunschTrainer.name.split(' ')[0]} arbeitet nicht`
@@ -2086,7 +2235,18 @@ function KundenAnsicht(props) {
               <p className="stat-text">{f.text}</p>
             </div>
           ))}
-          <button className="knopf-primaer" style={{ width: '100%', marginTop: 8 }} onClick={starteFlow}>
+
+          <span className="kicker" style={{ marginTop: 26 }}>
+            Einblicke
+          </span>
+          <h2 style={{ fontSize: 24 }}>unser raum.</h2>
+          <div className="blog-galerie">
+            {STUDIO_BILDER.map((b, i) => (
+              <BlogBild key={b.datei} {...b} gross={i === 0 || i === STUDIO_BILDER.length - 1} />
+            ))}
+          </div>
+
+          <button className="knopf-primaer" style={{ width: '100%', marginTop: 20 }} onClick={starteFlow}>
             Session buchen
           </button>
         </div>
@@ -2113,6 +2273,49 @@ function KundenAnsicht(props) {
           Studio
         </button>
       </nav>
+
+      {erfolg &&
+        (() => {
+          const t = trainerById(erfolg.trainerId)
+          const a = TRAININGSARTEN.find((x) => x.id === erfolg.artId)
+          return (
+            <div className="erfolg-hintergrund" role="dialog" aria-modal="true" aria-label="Buchung bestätigt">
+              <div className="erfolg-karte">
+                <svg className="haken" viewBox="0 0 72 72" aria-hidden="true">
+                  <circle className="haken-kreis" cx="36" cy="36" r="31" />
+                  <path className="haken-zug" d="M22 37.5 32 47l18-20" />
+                </svg>
+                <h2 style={{ marginTop: 16 }}>gebucht.</h2>
+                <div className="erfolg-details">
+                  <div className="zeile">
+                    <span className="gedeckt">Training</span>
+                    <span style={{ fontWeight: 500 }}>{a.name}</span>
+                  </div>
+                  <div className="zeile">
+                    <span className="gedeckt">Trainer</span>
+                    <span style={{ fontWeight: 500 }}>{t.name}</span>
+                  </div>
+                  <div className="zeile">
+                    <span className="gedeckt">Termin</span>
+                    <span className="mono" style={{ fontWeight: 500 }}>
+                      {woche.tage[erfolg.tag].label} {woche.tage[erfolg.tag].datumLabel} {stundeLabel(erfolg.stunde)}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  className="knopf-primaer"
+                  style={{ width: '100%' }}
+                  onClick={() => {
+                    setErfolg(null)
+                    setTab('termine')
+                  }}
+                >
+                  Zu deinen Terminen
+                </button>
+              </div>
+            </div>
+          )
+        })()}
 
       <TrainerModal trainer={trainerListe.find((t) => t.id === modalTrainerId) || null} buchungen={buchungen} onClose={() => setModalTrainerId(null)} />
     </div>
